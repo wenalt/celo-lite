@@ -1,18 +1,17 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 
 const BTN = "btn";
 const CARD = "card";
 
-// WalletConnect ESM (chargé au clic)
-const ETH_PROVIDER_URL =
-  "https://unpkg.com/@walletconnect/ethereum-provider@2.21.5/dist/index.js";
-const MODAL_URL =
-  "https://unpkg.com/@walletconnect/modal@2.7.0/dist/index.js";
-
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [wcProvider, setWcProvider] = useState(null);
+
+  // WalletConnect readiness (2 scripts to load OR poller detects global)
+  const [wcLoaded, setWcLoaded] = useState(0);
+  const wcReady = wcLoaded >= 2;
 
   const projectId = "138901e6be32b5e78b59aa262e517fd0";
   const CELO_CHAIN_ID = 42220;
@@ -32,27 +31,39 @@ export default function Home() {
     localStorage.setItem("celo-lite-theme", theme);
   }, [theme]);
 
+  // extra safety: poll for the UMD global in case onLoad doesn't fire in a webview
+  useEffect(() => {
+    const ok = () =>
+      !!(window.WalletConnectEthereumProvider?.EthereumProvider);
+    if (ok()) {
+      setWcLoaded(2);
+      return;
+    }
+    const id = setInterval(() => {
+      if (ok()) {
+        setWcLoaded(2);
+        clearInterval(id);
+      }
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
+
   function cycleTheme() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // ▶︎ charge WC à la demande (plus fiable que UMD + defer)
   async function ensureProvider() {
-    if (wcProvider) return wcProvider;
-
-    // 1) charge l’UI du QR (effet de bord, pas d’export)
-    try {
-      await import(/* webpackIgnore: true */ MODAL_URL);
-    } catch (e) {
-      console.warn("WalletConnect modal import failed (continuing):", e);
+    if (!wcReady) {
+      alert("WalletConnect is initializing. Try again in a second.");
+      return null;
     }
-
-    // 2) charge le provider et init
-    const { EthereumProvider } = await import(
-      /* webpackIgnore: true */ ETH_PROVIDER_URL
-    );
-
-    const provider = await EthereumProvider.init({
+    if (wcProvider) return wcProvider;
+    const WCE = window.WalletConnectEthereumProvider;
+    if (!WCE?.EthereumProvider) {
+      alert("WalletConnect not loaded yet. Try again in a second.");
+      return null;
+    }
+    const provider = await WCE.EthereumProvider.init({
       projectId,
       showQrModal: true,
       chains: [CELO_CHAIN_ID],
@@ -65,7 +76,6 @@ export default function Home() {
       ],
       events: ["accountsChanged", "chainChanged", "disconnect"],
     });
-
     provider.on("accountsChanged", (accs) => setAddress(accs?.[0] || null));
     provider.on("disconnect", () => setAddress(null));
     setWcProvider(provider);
@@ -108,12 +118,15 @@ export default function Home() {
   }
 
   async function disconnect() {
-    try { await wcProvider?.disconnect(); } catch {}
+    try {
+      await wcProvider?.disconnect();
+    } catch {}
     setAddress(null);
   }
 
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
-  const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
+  const themeLabel =
+    theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
@@ -122,14 +135,38 @@ export default function Home() {
         <title>Celo Lite — Ecosystem · Staking · Governance</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:title" content="Celo Lite" />
-        <meta property="og:description" content="Ecosystem · Staking · Governance" />
+        <meta
+          property="og:description"
+          content="Ecosystem · Staking · Governance"
+        />
         <meta property="og:image" content="/og.png" />
 
         {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
       </Head>
+
+      {/* WalletConnect UMD via jsDelivr (more reliable than remote ESM) */}
+      <Script
+        src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.umd.js"
+        strategy="afterInteractive"
+        onLoad={() => setWcLoaded((n) => n + 1)}
+        onError={() => console.warn("wc provider failed to load")}
+      />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.7.0/dist/cdn/index.js"
+        strategy="afterInteractive"
+        onLoad={() => setWcLoaded((n) => n + 1)}
+        onError={() => console.warn("wc modal failed to load")}
+      />
 
       <main className="page">
         <div className="wrap">
@@ -143,7 +180,11 @@ export default function Home() {
             </div>
 
             <div className="right">
-              <button className="theme" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+              <button
+                className="theme"
+                onClick={cycleTheme}
+                title={`Theme: ${themeLabel}`}
+              >
                 <span className="emoji">{themeIcon}</span>
                 <span className="label">{themeLabel}</span>
               </button>
@@ -163,11 +204,17 @@ export default function Home() {
                 {address ? (
                   <>
                     <span className="addr">{short(address)}</span>
-                    <button className={BTN} onClick={disconnect}>Disconnect</button>
+                    <button className={BTN} onClick={disconnect}>
+                      Disconnect
+                    </button>
                   </>
                 ) : (
-                  <button className={BTN} onClick={connect}>
-                    Connect Wallet
+                  <button
+                    className={BTN}
+                    onClick={connect}
+                    disabled={!wcReady}
+                  >
+                    {wcReady ? "Connect Wallet" : "Initializing…"}
                   </button>
                 )}
               </div>
@@ -176,19 +223,45 @@ export default function Home() {
 
           <section className={CARD}>
             <h2>Governance</h2>
-            <p>Get voting power by staking on a validator, then participate in proposals.</p>
+            <p>
+              Get voting power by staking on a validator, then participate in
+              proposals.
+            </p>
             <div className="btns">
-              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
-              <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
+              <a
+                className={BTN}
+                href="https://mondo.celo.org/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Mondo
+              </a>
+              <a
+                className={BTN}
+                href="https://mondo.celo.org/governance"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Browse Governance
+              </a>
             </div>
-            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
+            <p className="hint">
+              opens in the embedded browser — you’ll use <b>your</b> EVM wallet.
+            </p>
           </section>
 
           <section className={CARD}>
             <h2>Prosperity Passport</h2>
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
-              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
+              <a
+                className={BTN}
+                href="https://pass.celopg.eco/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open CeloPG
+              </a>
             </div>
           </section>
 
@@ -196,7 +269,12 @@ export default function Home() {
             <h2>Layer3 quests (current season)</h2>
             <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
             <div className="btns">
-              <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">
+              <a
+                className={BTN}
+                href="https://app.layer3.xyz/search?chainIds=42220&types=current_season"
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open Layer3
               </a>
             </div>
@@ -204,13 +282,25 @@ export default function Home() {
 
           <footer className="foot">
             <div className="social">
-              <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
+              <a
+                className="icon-link"
+                href="https://x.com/Celo"
+                target="_blank"
+                rel="noreferrer"
+                title="@Celo on X"
+              >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
                 <span>@Celo</span>
               </a>
-              <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
+              <a
+                className="icon-link"
+                href="https://t.me/+3uD9NKPbStYwY2Nk"
+                target="_blank"
+                rel="noreferrer"
+                title="Support CeloPG"
+              >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
