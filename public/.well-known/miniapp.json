@@ -1,0 +1,8 @@
+{
+  "id": "celo-lite",
+  "name": "Celo Lite",
+  "description": "Vote & Stake on Celo.",
+  "icon": "/icon.png",
+  "homepage": "https://<ton-url-vercel>/",
+  "categories": ["utilities", "governance"]
+}
