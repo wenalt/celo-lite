@@ -4,21 +4,15 @@ import { useEffect, useState } from "react";
 const BTN = "btn";
 const CARD = "card";
 
-/** charge le provider UMD depuis le CDN (au clic) */
-function loadWCProviderFromCDN() {
-  return new Promise((resolve) => {
-    if (window.WalletConnectEthereumProvider?.EthereumProvider) return resolve(true);
-    const s = document.createElement("script");
-    // UMD + ses assets depuis la même origine CDN
-    s.src = "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.umd.js?_v=5";
-    s.async = false;
-    s.onload = () => resolve(true);
-    s.onerror = () => {
-      console.warn("WalletConnect provider CDN failed to load");
-      resolve(false);
-    };
-    document.head.appendChild(s);
-  });
+/** charge la classe EthereumProvider via ESM (jsDelivr) */
+async function getEthereumProviderClass() {
+  if (window.__WCEthereumProvider) return window.__WCEthereumProvider;
+  // ESM côté CDN (plus fiable que UMD + globals)
+  const mod = await import(
+    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
+  );
+  window.__WCEthereumProvider = mod.EthereumProvider;
+  return window.__WCEthereumProvider;
 }
 
 export default function Home() {
@@ -48,22 +42,20 @@ export default function Home() {
   }
 
   async function ensureProvider() {
-    const ok = await loadWCProviderFromCDN();
-    if (!ok) {
+    if (wcProvider) return wcProvider;
+
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+    } catch (e) {
+      console.warn("Failed to import WC EthereumProvider ESM", e);
       alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
       return null;
     }
-    if (wcProvider) return wcProvider;
 
-    const WCE = window.WalletConnectEthereumProvider;
-    if (!WCE?.EthereumProvider) {
-      alert("WalletConnect global missing after load.");
-      return null;
-    }
-
-    const provider = await WCE.EthereumProvider.init({
+    const provider = await EthereumProvider.init({
       projectId,
-      showQrModal: true, // le provider gère l’UI du QR
+      showQrModal: true, // le provider ouvre le QR
       chains: [CELO_CHAIN_ID],
       methods: [
         "eth_sendTransaction",
@@ -73,7 +65,6 @@ export default function Home() {
         "wallet_addEthereumChain",
       ],
       events: ["accountsChanged", "chainChanged", "disconnect"],
-      // optionnel : meilleures métadatas d'app
       metadata: {
         name: "Celo Lite",
         description: "Ecosystem · Staking · Governance",
@@ -94,6 +85,7 @@ export default function Home() {
     try {
       await provider.connect();
       setAddress(provider.accounts?.[0] || null);
+
       const celoHex = `0x${CELO_CHAIN_ID.toString(16)}`;
       if (provider.chainId !== celoHex) {
         try {
