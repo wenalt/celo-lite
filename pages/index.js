@@ -1,17 +1,18 @@
 import Head from "next/head";
-import Script from "next/script";
 import { useEffect, useState } from "react";
 
 const BTN = "btn";
 const CARD = "card";
 
+// WalletConnect ESM (chargé au clic)
+const ETH_PROVIDER_URL =
+  "https://unpkg.com/@walletconnect/ethereum-provider@2.21.5/dist/index.js";
+const MODAL_URL =
+  "https://unpkg.com/@walletconnect/modal@2.7.0/dist/index.js";
+
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [wcProvider, setWcProvider] = useState(null);
-
-  // WalletConnect readiness (2 scripts to load)
-  const [wcLoaded, setWcLoaded] = useState(0);
-  const wcReady = wcLoaded >= 2;
 
   const projectId = "138901e6be32b5e78b59aa262e517fd0";
   const CELO_CHAIN_ID = 42220;
@@ -35,18 +36,23 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
+  // ▶︎ charge WC à la demande (plus fiable que UMD + defer)
   async function ensureProvider() {
-    if (!wcReady) {
-      alert("WalletConnect is initializing. Try again in a second.");
-      return null;
-    }
     if (wcProvider) return wcProvider;
-    const WCE = window.WalletConnectEthereumProvider;
-    if (!WCE?.EthereumProvider) {
-      alert("WalletConnect not loaded yet. Try again in a second.");
-      return null;
+
+    // 1) charge l’UI du QR (effet de bord, pas d’export)
+    try {
+      await import(/* webpackIgnore: true */ MODAL_URL);
+    } catch (e) {
+      console.warn("WalletConnect modal import failed (continuing):", e);
     }
-    const provider = await WCE.EthereumProvider.init({
+
+    // 2) charge le provider et init
+    const { EthereumProvider } = await import(
+      /* webpackIgnore: true */ ETH_PROVIDER_URL
+    );
+
+    const provider = await EthereumProvider.init({
       projectId,
       showQrModal: true,
       chains: [CELO_CHAIN_ID],
@@ -59,6 +65,7 @@ export default function Home() {
       ],
       events: ["accountsChanged", "chainChanged", "disconnect"],
     });
+
     provider.on("accountsChanged", (accs) => setAddress(accs?.[0] || null));
     provider.on("disconnect", () => setAddress(null));
     setWcProvider(provider);
@@ -79,7 +86,6 @@ export default function Home() {
             params: [{ chainId: celoHex }],
           });
         } catch {
-          // si la chaîne n’existe pas dans le wallet, on la propose
           try {
             await provider.request({
               method: "wallet_addEthereumChain",
@@ -125,18 +131,6 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      {/* WalletConnect UMD via next/script */}
-      <Script
-        src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.1/dist/index.umd.js"
-        strategy="afterInteractive"
-        onLoad={() => setWcLoaded((n) => n + 1)}
-      />
-      <Script
-        src="https://unpkg.com/@walletconnect/modal@2.6.4/dist/index.umd.js"
-        strategy="afterInteractive"
-        onLoad={() => setWcLoaded((n) => n + 1)}
-      />
-
       <main className="page">
         <div className="wrap">
           <header className="head">
@@ -156,12 +150,11 @@ export default function Home() {
 
               <a
                 className="fc"
-                href="https://farcaster.xyz/wenaltszn.eth"
+                href="https://warpcast.com/wenaltszn.eth"
                 target="_blank"
                 rel="noreferrer"
                 title="Farcaster profile"
               >
-                {/* utilise une image dans /public/farcaster.png */}
                 <img src="/farcaster.png" alt="Farcaster" width="22" height="22" />
                 <span>@wenaltszn.eth</span>
               </a>
@@ -173,8 +166,8 @@ export default function Home() {
                     <button className={BTN} onClick={disconnect}>Disconnect</button>
                   </>
                 ) : (
-                  <button className={BTN} onClick={connect} disabled={!wcReady}>
-                    {wcReady ? "Connect Wallet" : "Initializing…"}
+                  <button className={BTN} onClick={connect}>
+                    Connect Wallet
                   </button>
                 )}
               </div>
