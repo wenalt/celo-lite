@@ -4,15 +4,10 @@ import { useEffect, useState } from "react";
 const BTN = "btn";
 const CARD = "card";
 
-/** charge la classe EthereumProvider via ESM (jsDelivr) */
+/** charge la classe EthereumProvider via ESM packagé par Next/Vercel (pas de CDN) */
 async function getEthereumProviderClass() {
-  if (window.__WCEthereumProvider) return window.__WCEthereumProvider;
-  // ESM côté CDN (plus fiable que UMD + globals)
-  const mod = await import(
-    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
-  );
-  window.__WCEthereumProvider = mod.EthereumProvider;
-  return window.__WCEthereumProvider;
+  const mod = await import("@walletconnect/ethereum-provider");
+  return mod.EthereumProvider;
 }
 
 export default function Home() {
@@ -48,14 +43,14 @@ export default function Home() {
     try {
       EthereumProvider = await getEthereumProviderClass();
     } catch (e) {
-      console.warn("Failed to import WC EthereumProvider ESM", e);
+      console.warn("Failed to import WC EthereumProvider", e);
       alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
       return null;
     }
 
     const provider = await EthereumProvider.init({
       projectId,
-      showQrModal: true, // le provider ouvre le QR
+      showQrModal: true, // utilise @walletconnect/modal (installé en dépendance)
       chains: [CELO_CHAIN_ID],
       methods: [
         "eth_sendTransaction",
@@ -122,7 +117,7 @@ export default function Home() {
 
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
-  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
+  const themeIcon  = theme === "auto" ? "A"    : theme === "light" ? "☀️"    : "🌙";
 
   return (
     <>
