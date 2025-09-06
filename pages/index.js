@@ -4,15 +4,19 @@ import { useEffect, useState } from "react";
 const BTN = "btn";
 const CARD = "card";
 
-// charge le provider UMD local (une seule fois au clic)
-function loadLocalWCProvider() {
+/** charge le provider UMD depuis le CDN (au clic) */
+function loadWCProviderFromCDN() {
   return new Promise((resolve) => {
     if (window.WalletConnectEthereumProvider?.EthereumProvider) return resolve(true);
     const s = document.createElement("script");
-    s.src = "/vendor/wc-eth.js?v=3"; // assure-toi d’avoir ce fichier dans public/vendor/
+    // UMD + ses assets depuis la même origine CDN
+    s.src = "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.umd.js?_v=5";
     s.async = false;
     s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
+    s.onerror = () => {
+      console.warn("WalletConnect provider CDN failed to load");
+      resolve(false);
+    };
     document.head.appendChild(s);
   });
 }
@@ -44,7 +48,7 @@ export default function Home() {
   }
 
   async function ensureProvider() {
-    const ok = await loadLocalWCProvider();
+    const ok = await loadWCProviderFromCDN();
     if (!ok) {
       alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
       return null;
@@ -69,6 +73,13 @@ export default function Home() {
         "wallet_addEthereumChain",
       ],
       events: ["accountsChanged", "chainChanged", "disconnect"],
+      // optionnel : meilleures métadatas d'app
+      metadata: {
+        name: "Celo Lite",
+        description: "Ecosystem · Staking · Governance",
+        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
+        icons: ["/icon.png"],
+      },
     });
 
     provider.on("accountsChanged", (accs) => setAddress(accs?.[0] || null));
