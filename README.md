@@ -1,2 +1,2 @@
 # celo-lite
-Farcaster miniapp for voting (Mondo/Safe) and staking $CELO (Safe)
+Vote · Stake · Explore the Celo Prosperity ecosystem from Farcaster
