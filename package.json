@@ -2,8 +2,14 @@
   "name": "celo-lite",
   "version": "1.0.0",
   "private": true,
-  "description": "Celo Lite — miniapp Farcaster pour voter (Mondo/Safe) et staker CELO (Safe).",
+  "description": "Celo Lite — miniapp ; Vote · Stake · Explore the Celo Prosperity ecosystem from Farcaster.",
   "license": "MIT",
   "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
-  "dependencies": { "next": "14.2.5", "react": "18.2.0", "react-dom": "18.2.0" }
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@walletconnect/ethereum-provider": "2.11.0",
+    "@walletconnect/modal": "2.6.2"
+  }
 }
