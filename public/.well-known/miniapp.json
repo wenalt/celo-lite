@@ -3,6 +3,6 @@
   "name": "Celo Lite",
   "description": "Vote & Stake on Celo.",
   "icon": "/icon.png",
-  "homepage": "https://<ton-url-vercel>/",
+  "homepage": "https://celo-lite.vercel.app/",
   "categories": ["utilities", "governance"]
 }
