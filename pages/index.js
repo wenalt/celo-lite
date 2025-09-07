@@ -1,7 +1,13 @@
 // pages/index.js
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import SelfVerificationDialog from "../components/self/SelfVerificationDialog";
+import dynamic from "next/dynamic";
+
+// ⬇️ charge le dialog en client-only pour éviter les erreurs de build/SSR
+const SelfVerificationDialog = dynamic(
+  () => import("../components/self/SelfVerificationDialog"),
+  { ssr: false }
+);
 
 const BTN = "btn";
 const CARD = "card";
@@ -271,7 +277,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ajouté : dialog Self juste après la section */}
+          {/* dialog Self (client-only) */}
           <SelfVerificationDialog
             open={openSelf}
             onClose={() => setOpenSelf(false)}
