@@ -1,19 +1,29 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode";
 import { getUniversalLink } from "@selfxyz/core";
 import { ZeroAddress } from "ethers";
-
-function isMobileUA() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
 
 export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   const [selfApp, setSelfApp] = useState(null);
   const [deeplink, setDeeplink] = useState("");
   const [ready, setReady] = useState(false);
   const [err, setErr] = useState(null);
+
+  // portal: on rend le modal directement dans <body> (immanquable)
+  const [mounted, setMounted] = useState(false);
+  const [portalEl, setPortalEl] = useState(null);
+
+  useEffect(() => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    setPortalEl(el);
+    setMounted(true);
+    return () => {
+      document.body.removeChild(el);
+    };
+  }, []);
 
   const uid = useMemo(() => (userAddress ?? ZeroAddress), [userAddress]);
 
@@ -24,19 +34,16 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
       setErr(null);
       setReady(false);
 
-      // 👉 Aligne-toi sur la doc: endpoint public depuis ENV si présent,
-      // sinon fallback auto à l’URL du déploiement (Vercel).
-      const origin =
-        (typeof window !== "undefined" && window.location.origin) || "";
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const endpoint =
         process.env.NEXT_PUBLIC_SELF_ENDPOINT ||
         `${origin}/api/self/verify`;
 
       const app = new SelfAppBuilder({
-        version: 2, // requis par la V2
+        version: 2,
         appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
         scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
-        endpoint, // offchain: endpoint HTTPS de ton API
+        endpoint,
         endpointType:
           process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true"
             ? "staging_https"
@@ -45,15 +52,13 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         userIdType: "hex",
         userDefinedData: "prosperity-passport",
         disclosures: {
-          // ⚠ doivent matcher le backend
-          minimumAge: 18,
+          minimumAge: 18, // doit matcher le backend
           nationality: true,
           gender: true,
-          // ofac / excludedCountries si tu en actives côté backend
         },
       }).build();
 
-      const link = getUniversalLink(app); // lien universel (iOS/Android)
+      const link = getUniversalLink(app);
       setSelfApp(app);
       setDeeplink(link || "");
       setReady(!!link);
@@ -65,91 +70,96 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
 
   function openSelfApp() {
     if (!deeplink) return;
-    // 1) clic programmatique sur <a> (fiable)
-    const a = document.createElement("a");
-    a.href = deeplink;
-    a.rel = "noopener";
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
 
-    // 2) fallback popup
-    setTimeout(() => {
-      try { window.open(deeplink, "_blank", "noopener"); } catch {}
-    }, 120);
+    try {
+      // 1) ancre invisible + click programmatique
+      const a = document.createElement("a");
+      a.href = deeplink;
+      a.rel = "noopener";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
 
-    // 3) dernier filet : navigation forcée
-    setTimeout(() => {
-      try { window.location.href = deeplink; } catch {}
-    }, 260);
+      // 2) fallback popup
+      setTimeout(() => { try { window.open(deeplink, "_blank", "noopener"); } catch {} }, 120);
+
+      // 3) dernier filet : navigation forcée
+      setTimeout(() => { try { window.location.href = deeplink; } catch {} }, 260);
+    } catch (e) {
+      console.error("deeplink open error", e);
+    }
   }
 
-  if (!open) return null;
+  if (!open || !mounted || !portalEl) return null;
 
-  const mobile = isMobileUA();
-
-  return (
+  return createPortal(
     <div
-  style={{
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,.5)",
-    display: "grid",
-    placeItems: "center",
-    padding: 16,
-    zIndex: 9999,
-  }}
->
-  <div
-    style={{
-      background: "var(--card, #121212)",
-      color: "inherit",
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 420,
-    }}
-  >
-        <h2 className="text-xl font-semibold mb-2">Self.xyz Verification</h2>
-        <p className="text-sm opacity-80 mb-3">
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.5)",
+        display: "grid",
+        placeItems: "center",
+        padding: 16,
+        zIndex: 9999,
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        style={{
+          background: "var(--card, #121212)",
+          color: "inherit",
+          borderRadius: 16,
+          padding: 24,
+          width: "100%",
+          maxWidth: 420,
+          boxShadow: "0 10px 30px rgba(0,0,0,.4)",
+        }}
+      >
+        <h2 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>
+          Self.xyz Verification
+        </h2>
+        <p style={{ margin: "0 0 8px", opacity: 0.75, fontSize: 14 }}>
           Scanne le QR (desktop) ou ouvre l’app Self (mobile).
         </p>
 
-        {/* état/debug minimal */}
-        <p className="text-xs opacity-60 mb-2">
+        <p style={{ margin: "0 0 8px", opacity: 0.6, fontSize: 12 }}>
           Status: {ready ? "Ready" : "Not ready"}{err ? ` — ${err}` : ""}
         </p>
 
         {selfApp ? (
-          <div className="space-y-3">
-            {/* QR en mode deeplink (encode le lien universel) */}
-            <div className="grid place-items-center">
-              <SelfQRcodeWrapper
-                selfApp={selfApp}
-                type="deeplink"        // ← clé pour mobile-first
-                size={260}
-                onSuccess={() => {
-                  onClose(); // TODO: rafraîchir l’état "Verified"
-                }}
-                onError={(e) => console.error("Self verification failed", e)}
-              />
-            </div>
+          <div style={{ display: "grid", gap: 12, placeItems: "center" }}>
+            <SelfQRcodeWrapper
+              selfApp={selfApp}
+              type="deeplink"
+              size={260}
+              onSuccess={() => { onClose(); /* TODO: re-fetch "Verified" */ }}
+              onError={(e) => console.error("Self verification failed", e)}
+            />
 
-            {/* Bouton deeplink (mobile) + dispo partout en secours */}
             <button
-              className="w-full rounded-xl py-2 bg-white/10 disabled:opacity-60"
               onClick={openSelfApp}
               disabled={!ready || !deeplink}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: 12,
+                background: "rgba(255,255,255,.08)",
+                color: "inherit",
+                border: 0,
+                cursor: ready && deeplink ? "pointer" : "not-allowed",
+                opacity: ready && deeplink ? 1 : 0.6,
+              }}
             >
               Ouvrir l’app Self
             </button>
 
-            {/* Lien brut (copier/coller si navigateur bloque) */}
             {deeplink ? (
-              <p className="text-xs break-all opacity-70">
+              <p style={{ fontSize: 12, opacity: 0.7, wordBreak: "break-all", margin: 0 }}>
                 <a href={deeplink} target="_blank" rel="noreferrer">
-                  {mobile ? "Si rien ne se passe, appuie ici" : "Lien universel"}
+                  Lien universel (fallback)
                 </a>
               </p>
             ) : null}
@@ -158,10 +168,23 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
           <div>Chargement…</div>
         )}
 
-        <div className="mt-4 text-right">
-          <button className="text-sm opacity-80" onClick={onClose}>Fermer</button>
+        <div style={{ marginTop: 12, textAlign: "right" }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: "transparent",
+              color: "inherit",
+              border: 0,
+              opacity: 0.8,
+              cursor: "pointer",
+              fontSize: 14,
+            }}
+          >
+            Fermer
+          </button>
         </div>
       </div>
-    </div>
+    </div>,
+    portalEl
   );
 }
