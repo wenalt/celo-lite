@@ -210,13 +210,6 @@ export default function Home() {
         onLoad={() => setWcLoaded((n) => Math.max(n, 1))}
         onError={() => console.warn("wc provider failed to load")}
       />
-      {/* Modal UMD : optionnel, mais on le met pour un QR propre */}
-      <Script
-        src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.7.0/dist/cdn/index.js"
-        strategy="afterInteractive"
-        onLoad={() => setWcLoaded((n) => Math.max(n, 1))}
-        onError={() => console.warn("wc modal failed to load")}
-      />
 
       <main className="page">
         <div className="wrap">
