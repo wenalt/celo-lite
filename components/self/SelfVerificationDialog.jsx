@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode"; // ✅ imports nommés
+import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode"; // imports nommés
 import { getUniversalLink } from "@selfxyz/core";
 import { ZeroAddress } from "ethers";
 
@@ -37,7 +37,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const endpoint =
         process.env.NEXT_PUBLIC_SELF_ENDPOINT ||
-        `${origin}/api/self/verify`;
+        `${origin}/api/self/verify`; // ✅ template string correcte
 
       console.log("[Self] init with:", {
         appName: process.env.NEXT_PUBLIC_SELF_APP_NAME,
@@ -60,7 +60,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         userIdType: "hex",
         userDefinedData: "prosperity-passport",
         disclosures: {
-          minimumAge: 18,   // doit matcher le backend
+          minimumAge: 18, // doit matcher le backend
           nationality: true,
           gender: true,
         },
@@ -91,10 +91,14 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
       a.remove();
 
       // 2) fallback popup
-      setTimeout(() => { try { window.open(deeplink, "_blank", "noopener"); } catch {} }, 120);
+      setTimeout(() => {
+        try { window.open(deeplink, "_blank", "noopener"); } catch {}
+      }, 120);
 
       // 3) dernier filet : navigation forcée
-      setTimeout(() => { try { window.location.href = deeplink; } catch {} }, 260);
+      setTimeout(() => {
+        try { window.location.href = deeplink; } catch {}
+      }, 260);
     } catch (e) {
       console.error("deeplink open error", e);
     }
@@ -135,7 +139,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         </p>
 
         <p style={{ margin: "0 0 8px", opacity: 0.6, fontSize: 12 }}>
-          Status: {ready ? "Ready" : "Not ready"}{err ? ` — ${err}` : ""}
+          Status: {ready ? "Ready" : "Not ready"}{err ? ` — ${err}` : ""} {/* ✅ interpolation */}
         </p>
 
         {selfApp ? (
