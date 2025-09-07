@@ -1,8 +1,13 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode"; // ⬅ import nommé
+import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode";
 import { getUniversalLink } from "@selfxyz/core";
 import { ZeroAddress } from "ethers";
+
+function isMobileUA() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 
 export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   const [selfApp, setSelfApp] = useState(null);
@@ -15,72 +20,81 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   useEffect(() => {
     if (!open) return;
 
-    (async () => {
-      try {
-        setErr(null);
-        setReady(false);
+    try {
+      setErr(null);
+      setReady(false);
 
-        const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const endpoint = `${origin}/api/self/verify`;
+      // 👉 Aligne-toi sur la doc: endpoint public depuis ENV si présent,
+      // sinon fallback auto à l’URL du déploiement (Vercel).
+      const origin =
+        (typeof window !== "undefined" && window.location.origin) || "";
+      const endpoint =
+        process.env.NEXT_PUBLIC_SELF_ENDPOINT ||
+        `${origin}/api/self/verify`;
 
-        const app = new SelfAppBuilder({
-          version: 2, // ⬅ important
-          appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
-          scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
-          endpoint,
-          userId: uid,
-          endpointType: process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true" ? "staging_https" : "prod_https", // ⬅ important
-          userIdType: "hex",
-          userDefinedData: "prosperity-passport",
-          disclosures: {
-            minimumAge: 18,   // doit matcher le backend
-            nationality: true,
-            gender: true,
-          },
-        }).build();
+      const app = new SelfAppBuilder({
+        version: 2, // requis par la V2
+        appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
+        scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
+        endpoint, // offchain: endpoint HTTPS de ton API
+        endpointType:
+          process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true"
+            ? "staging_https"
+            : "prod_https",
+        userId: uid,
+        userIdType: "hex",
+        userDefinedData: "prosperity-passport",
+        disclosures: {
+          // ⚠ doivent matcher le backend
+          minimumAge: 18,
+          nationality: true,
+          gender: true,
+          // ofac / excludedCountries si tu en actives côté backend
+        },
+      }).build();
 
-        const link = getUniversalLink(app);
-        setSelfApp(app);
-        setDeeplink(link || "");
-        setReady(!!link);
-      } catch (e) {
-        console.error(e);
-        setErr(e?.message || "Failed to initialize Self");
-      }
-    })();
+      const link = getUniversalLink(app); // lien universel (iOS/Android)
+      setSelfApp(app);
+      setDeeplink(link || "");
+      setReady(!!link);
+    } catch (e) {
+      console.error(e);
+      setErr(e?.message || "Failed to initialize Self");
+    }
   }, [open, uid]);
 
   function openSelfApp() {
     if (!deeplink) return;
+    // 1) clic programmatique sur <a> (fiable)
+    const a = document.createElement("a");
+    a.href = deeplink;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
-    try {
-      // 1) ancre invisible + click programmatique (le plus fiable)
-      const a = document.createElement("a");
-      a.href = deeplink;
-      a.rel = "noopener";
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+    // 2) fallback popup
+    setTimeout(() => {
+      try { window.open(deeplink, "_blank", "noopener"); } catch {}
+    }, 120);
 
-      // 2) fallback popup
-      setTimeout(() => { try { window.open(deeplink, "_blank", "noopener"); } catch {} }, 120);
-
-      // 3) dernier filet : navigation forcée
-      setTimeout(() => { try { window.location.href = deeplink; } catch {} }, 260);
-    } catch (e) {
-      console.error("deeplink open error", e);
-    }
+    // 3) dernier filet : navigation forcée
+    setTimeout(() => {
+      try { window.location.href = deeplink; } catch {}
+    }, 260);
   }
 
   if (!open) return null;
+
+  const mobile = isMobileUA();
 
   return (
     <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
       <div className="bg-neutral-900 rounded-2xl p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold mb-2">Self.xyz Verification</h2>
         <p className="text-sm opacity-80 mb-3">
-          Scanne le QR sur desktop, ou ouvre l’app Self sur mobile.
+          Scanne le QR (desktop) ou ouvre l’app Self (mobile).
         </p>
 
         {/* état/debug minimal */}
@@ -90,17 +104,20 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
 
         {selfApp ? (
           <div className="space-y-3">
-            {/* QR (utile même sur mobile/tablette) */}
+            {/* QR en mode deeplink (encode le lien universel) */}
             <div className="grid place-items-center">
               <SelfQRcodeWrapper
                 selfApp={selfApp}
-                onSuccess={() => { onClose(); /* TODO: re-fetch état “Verified” */ }}
-                onError={(e) => console.error("Self verification failed", e)}
+                type="deeplink"        // ← clé pour mobile-first
                 size={260}
+                onSuccess={() => {
+                  onClose(); // TODO: rafraîchir l’état "Verified"
+                }}
+                onError={(e) => console.error("Self verification failed", e)}
               />
             </div>
 
-            {/* Bouton deeplink (mobile-first) */}
+            {/* Bouton deeplink (mobile) + dispo partout en secours */}
             <button
               className="w-full rounded-xl py-2 bg-white/10 disabled:opacity-60"
               onClick={openSelfApp}
@@ -109,10 +126,12 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
               Ouvrir l’app Self
             </button>
 
-            {/* Lien brut pour copier/coller si le navigateur bloque */}
+            {/* Lien brut (copier/coller si navigateur bloque) */}
             {deeplink ? (
               <p className="text-xs break-all opacity-70">
-                <a href={deeplink}>Si rien ne se passe, appuie ici</a>
+                <a href={deeplink} target="_blank" rel="noreferrer">
+                  {mobile ? "Si rien ne se passe, appuie ici" : "Lien universel"}
+                </a>
               </p>
             ) : null}
           </div>
