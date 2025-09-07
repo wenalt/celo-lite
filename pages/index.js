@@ -1,9 +1,16 @@
+// pages/index.js
 import Head from "next/head";
-import Script from "next/script";
 import { useEffect, useState } from "react";
 
 const BTN = "btn";
 const CARD = "card";
+
+// charge la classe EthereumProvider depuis le package npm (client-only)
+async function getEthereumProviderClass() {
+  if (typeof window === "undefined") return null;
+  const mod = await import("@walletconnect/ethereum-provider");
+  return mod.EthereumProvider;
+}
 
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
@@ -26,33 +33,15 @@ export default function Home() {
   const [chainId, setChainId] = useState(null);
   const [balance, setBalance] = useState(null);
 
-  // On garde ton ProjectID public
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  // Suivi du chargement via <Script> ET poll de la variable globale pour les webviews
-  const [wcLoaded, setWcLoaded] = useState(0);
-  const wcReady = wcLoaded >= 1;
-
-  useEffect(() => {
-    const ok = () => !!(window.WalletConnectEthereumProvider?.EthereumProvider);
-    if (ok()) {
-      setWcLoaded(2);
-      return;
-    }
-    const id = setInterval(() => {
-      if (ok()) {
-        setWcLoaded(2);
-        clearInterval(id);
-      }
-    }, 400);
-    return () => clearInterval(id);
-  }, []);
-
   const [theme, setTheme] = useState("auto");
+
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -61,6 +50,7 @@ export default function Home() {
     else root.removeAttribute("data-theme");
     localStorage.setItem("celo-lite-theme", theme);
   }, [theme]);
+
   function cycleTheme() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
@@ -70,7 +60,7 @@ export default function Home() {
     try {
       const [cid, bal] = await Promise.all([
         p.request({ method: "eth_chainId" }),
-        p.request({ method: "eth_getBalance", params: [addr, "latest"] })
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
       ]);
       setChainId(cid);
       setBalance(bal);
@@ -80,16 +70,15 @@ export default function Home() {
   }
 
   async function ensureProvider() {
-    if (!wcReady) {
-      alert("WalletConnect is initializing. Try again in a second.");
-      return null;
-    }
     if (wcProvider) return wcProvider;
 
-    const WCE = window.WalletConnectEthereumProvider;
-    const EthereumProvider = WCE?.EthereumProvider;
-    if (!EthereumProvider) {
-      alert("WalletConnect global missing after load.");
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
+    } catch (e) {
+      console.warn("Failed to import @walletconnect/ethereum-provider", e);
+      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
       return null;
     }
 
@@ -102,15 +91,15 @@ export default function Home() {
         "personal_sign",
         "eth_signTypedData",
         "wallet_switchEthereumChain",
-        "wallet_addEthereumChain"
+        "wallet_addEthereumChain",
       ],
       events: ["accountsChanged", "chainChanged", "disconnect"],
       metadata: {
         name: "Celo Lite",
         description: "Ecosystem · Staking · Governance",
         url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
-        icons: ["/icon.png"]
-      }
+        icons: ["/icon.png"],
+      },
     });
 
     provider.on("accountsChanged", (accs) => {
@@ -119,10 +108,12 @@ export default function Home() {
       if (a) refreshStatus(provider, a);
       else setBalance(null);
     });
+
     provider.on("chainChanged", (cid) => {
       setChainId(cid);
       if (address) refreshStatus(provider, address);
     });
+
     provider.on("disconnect", () => {
       setAddress(null);
       setChainId(null);
@@ -138,7 +129,6 @@ export default function Home() {
     if (!provider) return;
     try {
       await provider.connect();
-
       const addr = provider.accounts?.[0] || null;
       setAddress(addr);
 
@@ -149,7 +139,7 @@ export default function Home() {
         try {
           await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: CELO_HEX }]
+            params: [{ chainId: CELO_HEX }],
           });
           setChainId(CELO_HEX);
         } catch {
@@ -162,9 +152,9 @@ export default function Home() {
                   chainName: "Celo Mainnet",
                   rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
                   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-                  blockExplorerUrls: ["https://celoscan.io/"]
-                }
-              ]
+                  blockExplorerUrls: ["https://celoscan.io/"],
+                },
+              ],
             });
             setChainId(CELO_HEX);
           } catch {}
@@ -198,18 +188,12 @@ export default function Home() {
         <meta property="og:title" content="Celo Lite" />
         <meta property="og:description" content="Ecosystem · Staking · Governance" />
         <meta property="og:image" content="/og.png" />
+
+        {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
-
-      {/* Charge UMD depuis jsDelivr (plus fiable qu’un import ESM) */}
-      <Script
-        src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.umd.js"
-        strategy="afterInteractive"
-        onLoad={() => setWcLoaded((n) => Math.max(n, 1))}
-        onError={() => console.warn("wc provider failed to load")}
-      />
 
       <main className="page">
         <div className="wrap">
@@ -240,14 +224,13 @@ export default function Home() {
                     <button className={BTN} onClick={disconnect}>Disconnect</button>
                   </>
                 ) : (
-                  <button className={BTN} onClick={connect} disabled={!wcReady}>
-                    {wcReady ? "Connect Wallet" : "Initializing…"}
-                  </button>
+                  <button className={BTN} onClick={connect}>Connect Wallet</button>
                 )}
               </div>
             </div>
           </header>
 
+          {/* Wallet status */}
           <section className={CARD}>
             <h2>Wallet</h2>
             {address ? (
@@ -306,9 +289,7 @@ export default function Home() {
                 <span className="label">Support CeloPG</span>
               </a>
             </div>
-            <p className="madeby">
-              Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel
-            </p>
+            <p className="madeby">Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel</p>
           </footer>
         </div>
       </main>
@@ -351,7 +332,9 @@ export default function Home() {
         .card p{ margin:0 0 10px; color:var(--muted) }
         .btns{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 6px; justify-content:center; }
 
-        .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg); padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+        .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg);
+              padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
+              text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
@@ -360,7 +343,8 @@ export default function Home() {
 
         .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
-        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
+        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card);
+                    border:1px solid var(--ring); color:inherit; text-decoration:none; }
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
       `}</style>
