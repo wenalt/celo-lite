@@ -59,11 +59,6 @@ export default function Home() {
     }
   }, []);
 
-  // log utile pour debug
-  useEffect(() => {
-    console.log("[Self] openSelf =", openSelf);
-  }, [openSelf]);
-
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -210,6 +205,12 @@ export default function Home() {
         <meta property="og:title" content="Celo Lite" />
         <meta property="og:description" content="Ecosystem · Staking · Governance" />
         <meta property="og:image" content="/og.png" />
+        {/* Favicon / app icons */}
+        <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
+        <meta name="theme-color" content="#F6DF3A" />
+
+        {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -232,9 +233,25 @@ export default function Home() {
                 <span className="label">{themeLabel}</span>
               </button>
 
+              {/* Farcaster (mini) */}
               <a className="fc" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                <img src="/farcaster.png" alt="Farcaster" width="22" height="22" />
+                <img src="/farcaster.png" alt="Farcaster" width="18" height="18" />
                 <span>@wenaltszn.eth</span>
+              </a>
+
+              {/* GitHub (mini) */}
+              <a
+                className="icon-link mini"
+                href="https://github.com/wenalt"
+                target="_blank"
+                rel="noreferrer"
+                title="GitHub profile"
+              >
+                {/* GitHub mark */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M12 .5A12 12 0 0 0 0 12.7c0 5.4 3.4 10 8.2 11.6.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.5-4-1.5-.6-1.5-1.4-1.9-1.4-1.9-1.1-.8.1-.8.1-.8 1.2.1 1.8 1.3 1.8 1.3 1.1 1.9 2.9 1.3 3.6 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.4-5.5-6.1 0-1.3.5-2.5 1.3-3.4-.1-.3-.6-1.6.1-3.3 0 0 1.1-.4 3.5 1.3 1-.3 2-.4 3-.4s2 .1 3 .4c2.4-1.7 3.5-1.3 3.5-1.3.7 1.7.2 3 .1 3.3.8.9 1.3 2.1 1.3 3.4 0 4.7-2.8 5.8-5.5 6.1.4.3.8 1 .8 2.1v3.1c0 .3.2.8.8.6 4.8-1.6 8.2-6.2 8.2-11.6A12.2 12.2 0 0 0 12 .5Z"/>
+                </svg>
+                <span className="label">GitHub</span>
               </a>
 
               <div className="wc">
@@ -282,10 +299,7 @@ export default function Home() {
             <div className="btns">
               <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
               {/* bouton Self */}
-              <button
-                className={BTN}
-                onClick={() => { console.log("CLICK OPEN"); setOpenSelf(true); }}
-              >
+              <button className={BTN} onClick={() => setOpenSelf(true)}>
                 Self.xyz Verification
               </button>
             </div>
@@ -347,6 +361,18 @@ export default function Home() {
                 <span className="label">Discord</span>
               </a>
 
+              {/* Guild (jpg dans /public/guild.jpg) */}
+              <a
+                className="icon-link"
+                href="https://guild.xyz/celo-communities"
+                target="_blank"
+                rel="noreferrer"
+                title="Celo's Communities Guild"
+              >
+                <img src="/guild.jpg" alt="Guild" width="22" height="22" />
+                <span className="label">Celo's Communities Guild</span>
+              </a>
+
               {/* Telegram CeloPG support */}
               <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
@@ -394,13 +420,21 @@ export default function Home() {
         .brand{ display:flex; align-items:center; gap:12px; }
         h1{ font-size:28px; font-weight:700; line-height:1.1; margin:0 }
         .tagline{ margin:2px 0 0; color:var(--muted) }
-        .right{ display:flex; align-items:center; gap:12px; }
+        .right{ display:flex; align-items:center; gap:10px; }
 
         .theme{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; cursor:pointer; }
         .theme .emoji{ font-size:14px; } .theme .label{ font-size:13px; color:var(--muted) }
         @media (max-width:520px){ .theme .label{ display:none } }
 
-        .fc{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        /* Farcaster (mini) */
+        .fc{ display:flex; align-items:center; gap:6px; text-decoration:none; color:inherit; padding:4px 8px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        .fc span{ font-size:13px; }
+
+        /* GitHub mini badge */
+        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
+        .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
+        .icon-link.mini{ padding:4px 8px; gap:6px; }
+
         .wc{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
@@ -421,8 +455,7 @@ export default function Home() {
 
         .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
-        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
+
         .madeby{ color:var(--muted); margin:0; text-align:center; }
       `}</style>
     </>
