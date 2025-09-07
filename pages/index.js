@@ -3,7 +3,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-// ⬇️ charge le dialog en client-only pour éviter les erreurs de build/SSR
+// charge le dialog en client-only pour éviter les erreurs de build/SSR
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
@@ -43,20 +43,25 @@ export default function Home() {
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
   const [theme, setTheme] = useState("auto");
-  const [openSelf, setOpenSelf] = useState(false); // <-- modal Self
+  const [openSelf, setOpenSelf] = useState(false); // modal Self
 
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
-  // 👉 Auto-ouvrir le modal si l’URL contient ?self=1
+  // Auto-ouvrir le modal si l’URL contient ?self=1
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
       if (sp.get("self") === "1") setOpenSelf(true);
     }
   }, []);
+
+  // log state du modal
+  useEffect(() => {
+    console.log("[Self] openSelf =", openSelf);
+  }, [openSelf]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -269,7 +274,6 @@ export default function Home() {
               <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
               <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
             </div>
-            {/* espace visuel avant la note */}
             <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
@@ -288,12 +292,14 @@ export default function Home() {
             </div>
           </section>
 
-          {/* dialog Self (client-only) */}
-          <SelfVerificationDialog
-            open={openSelf}
-            onClose={() => setOpenSelf(false)}
-            userAddress={address}
-          />
+          {/* dialog Self (client-only) — ne charge le chunk que quand on ouvre */}
+          {openSelf && (
+            <SelfVerificationDialog
+              open={openSelf}
+              onClose={() => setOpenSelf(false)}
+              userAddress={address}
+            />
+          )}
 
           <section className={CARD}>
             <h2>Ecosystem</h2>
@@ -410,9 +416,9 @@ export default function Home() {
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
-        .hint{ margin-top:14px; color:var(--muted); }
-        .ok{ color: var(--muted); }
-        .warn{ color:#b91c1c; font-weight:600; }
+        .hint{ margin-top:14px; color:var(--muted) }
+        .ok{ color: var(--muted) }
+        .warn{ color:#b91c1c; font-weight:600 }
 
         .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
