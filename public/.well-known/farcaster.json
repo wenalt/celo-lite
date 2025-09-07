@@ -2,5 +2,10 @@
   "name": "Celo Lite",
   "iconUrl": "https://celo-lite.vercel.app/icon.png",
   "homeUrl": "https://celo-lite.vercel.app",
-  "description": "Mini-hub for the Celo Prosperity ecosystem: governance, Mondo staking, Layer3 quests, CeloPG passport, and Self.xyz verification — optimized for Farcaster Mini Apps."
+  "description": "Mini-hub for the Celo Prosperity ecosystem: governance, Mondo staking, Layer3 quests, CeloPG passport, and Self.xyz verification — optimized for Farcaster Mini Apps.",
+  "accountAssociation": {
+    "header": "eyJmaWQiOjUyOTY5MiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDcwM0E1M2UxMzdjODQwMGYyODUzMjRCOUY2ZmNhQzBBMEE1YUMyQTEifQ",
+    "payload": "eyJkb21haW4iOiJjZWxvLWxpdGUudmVyY2VsLmFwcCJ9",
+    "signature": "MHg1MzM3NzY2N2E2NGFiMGI1Y2UxNzA3YjgyNzEyYmRjZTY1ZWVmZWVkZTEyNTI4OTRkZWFhZDQwMTkwMmZlOTg4NGQxODE0MjI5Y2ZiYmZmNjQxMGM4NWY3ZDJiY2Q1YWE2NzIwNTU3NjVlYTBjOWVlNjAxNGFiM2E0NDI4ZGE1MTFi"
+  }
 }
