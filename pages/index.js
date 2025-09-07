@@ -253,6 +253,7 @@ export default function Home() {
               <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
               <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
             </div>
+            {/* espace visuel avant la note */}
             <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
@@ -264,37 +265,25 @@ export default function Home() {
             </div>
           </section>
 
-              
-<section className={CARD}>
-  <h2>Ecosystem</h2>
-  <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
-  <div className="btns">
-    <a
-      className={BTN}
-      href="https://www.glodollar.org/"
-      target="_blank"
-      rel="noreferrer"
-      title="USD Glo Dollar"
-    >
-      USD Glo Dollar
-    </a>
-    <a
-      className={BTN}
-      href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548"
-      target="_blank"
-      rel="noreferrer"
-      title="Retire Eco Credits on Regen Atlas"
-    >
-      Retire Eco Credits (Regen Atlas)
-    </a>
-  </div>
-  <p className="hint">
-    Tip: USDGLO holdings can count toward Prosperity Pass tiers; Eco Credit
-    retirements generate on-chain certificates.
-  </p>
-</section>
+          <section className={CARD}>
+            <h2>Ecosystem</h2>
+            <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
+            <div className="btns">
+              <a className={BTN} href="https://www.glodollar.org/" target="_blank" rel="noreferrer" title="USD Glo Dollar">
+                USD Glo Dollar
+              </a>
+              <a
+                className={BTN}
+                href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548"
+                target="_blank"
+                rel="noreferrer"
+                title="Retire Eco Credits on Regen Atlas"
+              >
+                Retire Eco Credits (Regen Atlas)
+              </a>
+            </div>
+          </section>
 
-              
           <section className={CARD}>
             <h2>Layer3 quests (current season)</h2>
             <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
@@ -307,20 +296,42 @@ export default function Home() {
 
           <footer className="foot">
             <div className="social">
+              {/* X / Twitter */}
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
                 <span>@Celo</span>
               </a>
+
+              {/* Discord */}
+              <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#5865F2" aria-hidden>
+                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                </svg>
+                <span className="label">Discord</span>
+              </a>
+
+              {/* Telegram CeloPG support */}
               <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
                 <span className="label">Support CeloPG</span>
               </a>
+
+              {/* Telegram Self.xyz support (dernier) */}
+              <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
+                </svg>
+                <span className="label">Self's support Telegram</span>
+              </a>
             </div>
-            <p className="madeby">Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel</p>
+
+            <p className="madeby">
+              Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel
+            </p>
           </footer>
         </div>
       </main>
@@ -369,13 +380,13 @@ export default function Home() {
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
+        .hint{ margin-top:14px; color:var(--muted); } /* espace ajouté */
         .ok{ color: var(--muted); }
         .warn{ color:#b91c1c; font-weight:600; }
 
         .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
-        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card);
-                    border:1px solid var(--ring); color:inherit; text-decoration:none; }
+        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
       `}</style>
