@@ -1,6 +1,7 @@
 // pages/index.js
 import Head from "next/head";
 import { useEffect, useState } from "react";
+import SelfVerificationDialog from "../components/self/SelfVerificationDialog";
 
 const BTN = "btn";
 const CARD = "card";
@@ -36,6 +37,7 @@ export default function Home() {
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
   const [theme, setTheme] = useState("auto");
+  const [openSelf, setOpenSelf] = useState(false); // <-- ajouté
 
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
@@ -262,8 +264,19 @@ export default function Home() {
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
               <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
+              {/* ajouté : bouton Self */}
+              <button className={BTN} onClick={() => setOpenSelf(true)}>
+                Self.xyz Verification
+              </button>
             </div>
           </section>
+
+          {/* ajouté : dialog Self juste après la section */}
+          <SelfVerificationDialog
+            open={openSelf}
+            onClose={() => setOpenSelf(false)}
+            userAddress={address}
+          />
 
           <section className={CARD}>
             <h2>Ecosystem</h2>
