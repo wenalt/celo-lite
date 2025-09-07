@@ -17,7 +17,8 @@
     "@walletconnect/modal": "2.7.0",
     "@selfxyz/core": "*",
     "@selfxyz/qrcode": "*",
-    "ethers": "*"
+    "ethers": "*",
+    "@farcaster/miniapp-sdk": "latest"
   }
 }
 
