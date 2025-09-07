@@ -4,24 +4,51 @@ import { useEffect, useState } from "react";
 const BTN = "btn";
 const CARD = "card";
 
-/** charge la classe EthereumProvider via ESM packagé par Next/Vercel (pas de CDN) */
+/** Load WalletConnect EthereumProvider (ESM via jsDelivr) */
 async function getEthereumProviderClass() {
-  const mod = await import("@walletconnect/ethereum-provider");
-  return mod.EthereumProvider;
+  if (typeof window === "undefined") return null;
+  if (window.__WCEthereumProvider) return window.__WCEthereumProvider;
+  const mod = await import(
+    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
+  );
+  window.__WCEthereumProvider = mod.EthereumProvider;
+  return window.__WCEthereumProvider;
+}
+
+const CELO_CHAIN_ID = 42220;
+const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
+
+function formatCELO(weiHex) {
+  if (!weiHex) return "0";
+  try {
+    const wei = BigInt(weiHex);
+    const whole = wei / 1000000000000000000n;
+    const frac = (wei % 1000000000000000000n)
+      .toString()
+      .padStart(18, "0")
+      .slice(0, 4);
+    return `${whole}.${frac}`;
+  } catch {
+    return "0";
+  }
 }
 
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [wcProvider, setWcProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [balance, setBalance] = useState(null);
 
-  const projectId = "138901e6be32b5e78b59aa262e517fd0";
-  const CELO_CHAIN_ID = 42220;
+  const projectId =
+    process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
+    "138901e6be32b5e78b59aa262e517fd0";
 
   const [theme, setTheme] = useState("auto");
 
   useEffect(() => {
     const saved = localStorage.getItem("celo-lite-theme");
-    if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
+    if (saved === "light" || saved === "dark" || saved === "auto")
+      setTheme(saved);
   }, []);
 
   useEffect(() => {
@@ -36,21 +63,38 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
+  async function refreshStatus(p = wcProvider, addr = address) {
+    if (!p || !addr) return;
+    try {
+      const [cid, bal] = await Promise.all([
+        p.request({ method: "eth_chainId" }),
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
+      ]);
+      setChainId(cid);
+      setBalance(bal);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   async function ensureProvider() {
     if (wcProvider) return wcProvider;
 
     let EthereumProvider;
     try {
       EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("No EthereumProvider class");
     } catch (e) {
-      console.warn("Failed to import WC EthereumProvider", e);
-      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
+      console.warn("Failed to import WC EthereumProvider ESM", e);
+      alert(
+        "WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry."
+      );
       return null;
     }
 
     const provider = await EthereumProvider.init({
       projectId,
-      showQrModal: true, // utilise @walletconnect/modal (installé en dépendance)
+      showQrModal: true,
       chains: [CELO_CHAIN_ID],
       methods: [
         "eth_sendTransaction",
@@ -63,13 +107,34 @@ export default function Home() {
       metadata: {
         name: "Celo Lite",
         description: "Ecosystem · Staking · Governance",
-        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
+        url:
+          typeof location !== "undefined"
+            ? location.origin
+            : "https://celo-lite.vercel.app",
         icons: ["/icon.png"],
       },
     });
 
-    provider.on("accountsChanged", (accs) => setAddress(accs?.[0] || null));
-    provider.on("disconnect", () => setAddress(null));
+    provider.on("accountsChanged", (accs) => {
+      const a = accs?.[0] || null;
+      setAddress(a);
+      if (a) refreshStatus(provider, a);
+      else {
+        setBalance(null);
+      }
+    });
+
+    provider.on("chainChanged", (cid) => {
+      setChainId(cid);
+      if (address) refreshStatus(provider, address);
+    });
+
+    provider.on("disconnect", () => {
+      setAddress(null);
+      setChainId(null);
+      setBalance(null);
+    });
+
     setWcProvider(provider);
     return provider;
   }
@@ -79,45 +144,58 @@ export default function Home() {
     if (!provider) return;
     try {
       await provider.connect();
-      setAddress(provider.accounts?.[0] || null);
+      const addr = provider.accounts?.[0] || null;
+      setAddress(addr);
 
-      const celoHex = `0x${CELO_CHAIN_ID.toString(16)}`;
-      if (provider.chainId !== celoHex) {
+      const currentCid =
+        provider.chainId ||
+        (await provider.request({ method: "eth_chainId" }));
+      setChainId(currentCid);
+
+      if (currentCid !== CELO_HEX) {
         try {
           await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: celoHex }],
+            params: [{ chainId: CELO_HEX }],
           });
+          setChainId(CELO_HEX);
         } catch {
           try {
             await provider.request({
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: celoHex,
+                  chainId: CELO_HEX,
                   chainName: "Celo Mainnet",
-                  rpcUrls: ["https://forno.celo.org"],
+                  rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
                   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
                   blockExplorerUrls: ["https://celoscan.io/"],
                 },
               ],
             });
+            setChainId(CELO_HEX);
           } catch {}
         }
       }
+
+      await refreshStatus(provider, addr);
     } catch (e) {
       console.error(e);
     }
   }
 
   async function disconnect() {
-    try { await wcProvider?.disconnect(); } catch {}
+    try {
+      await wcProvider?.disconnect();
+    } catch {}
     setAddress(null);
+    setChainId(null);
+    setBalance(null);
   }
 
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
-  const themeIcon  = theme === "auto" ? "A"    : theme === "light" ? "☀️"    : "🌙";
+  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
     <>
@@ -130,8 +208,15 @@ export default function Home() {
 
         {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
       </Head>
 
       <main className="page">
@@ -146,7 +231,11 @@ export default function Home() {
             </div>
 
             <div className="right">
-              <button className="theme" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+              <button
+                className="theme"
+                onClick={cycleTheme}
+                title={`Theme: ${themeLabel}`}
+              >
                 <span className="emoji">{themeIcon}</span>
                 <span className="label">{themeLabel}</span>
               </button>
@@ -166,14 +255,35 @@ export default function Home() {
                 {address ? (
                   <>
                     <span className="addr">{short(address)}</span>
-                    <button className={BTN} onClick={disconnect}>Disconnect</button>
+                    <button className={BTN} onClick={disconnect}>
+                      Disconnect
+                    </button>
                   </>
                 ) : (
-                  <button className={BTN} onClick={connect}>Connect Wallet</button>
+                  <button className={BTN} onClick={connect}>
+                    Connect Wallet
+                  </button>
                 )}
               </div>
             </div>
           </header>
+
+          {/* NEW: Wallet status card */}
+          <section className={CARD}>
+            <h2>Wallet</h2>
+            {address ? (
+              <>
+                <p><b>{short(address)}</b></p>
+                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId || "-"}{" "}
+                  {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
+                </p>
+                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
+              </>
+            ) : (
+              <p>Connect to show status.</p>
+            )}
+          </section>
 
           <section className={CARD}>
             <h2>Governance</h2>
@@ -197,7 +307,12 @@ export default function Home() {
             <h2>Layer3 quests (current season)</h2>
             <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
             <div className="btns">
-              <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">
+              <a
+                className={BTN}
+                href="https://app.layer3.xyz/search?chainIds=42220&types=current_season"
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open Layer3
               </a>
             </div>
@@ -205,13 +320,27 @@ export default function Home() {
 
           <footer className="foot">
             <div className="social">
-              <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
+              <a
+                className="icon-link"
+                href="https://x.com/Celo"
+                target="_blank"
+                rel="noreferrer"
+                title="@Celo on X"
+              >
+                {/* X icon */}
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
                 <span>@Celo</span>
               </a>
-              <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
+              <a
+                className="icon-link"
+                href="https://t.me/+3uD9NKPbStYwY2Nk"
+                target="_blank"
+                rel="noreferrer"
+                title="Support CeloPG"
+              >
+                {/* Telegram */}
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
@@ -271,6 +400,9 @@ export default function Home() {
         .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg); padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
+
+        .ok{ color: var(--muted); }
+        .warn{ color:#b91c1c; font-weight:600; }
 
         .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
