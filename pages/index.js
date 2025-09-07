@@ -43,11 +43,19 @@ export default function Home() {
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
   const [theme, setTheme] = useState("auto");
-  const [openSelf, setOpenSelf] = useState(false); // <-- ajouté
+  const [openSelf, setOpenSelf] = useState(false); // <-- modal Self
 
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
+  }, []);
+
+  // 👉 Auto-ouvrir le modal si l’URL contient ?self=1
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("self") === "1") setOpenSelf(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -270,8 +278,11 @@ export default function Home() {
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
               <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
-              {/* ajouté : bouton Self */}
-              <button className={BTN} onClick={() => setOpenSelf(true)}>
+              {/* bouton Self (debug) */}
+              <button
+                className={BTN}
+                onClick={() => { console.log("CLICK OPEN"); alert("OPEN"); setOpenSelf(true); }}
+              >
                 Self.xyz Verification
               </button>
             </div>
@@ -326,7 +337,7 @@ export default function Home() {
               {/* Discord */}
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#5865F2" aria-hidden>
-                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -399,7 +410,7 @@ export default function Home() {
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
-        .hint{ margin-top:14px; color:var(--muted); } /* espace ajouté */
+        .hint{ margin-top:14px; color:var(--muted); }
         .ok{ color: var(--muted); }
         .warn{ color:#b91c1c; font-weight:600; }
 
