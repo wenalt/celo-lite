@@ -1,24 +1,17 @@
-// next.config.js
-const path = require('path');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    urlImports: ['https://cdn.jsdelivr.net'],
+    urlImports: ["https://cdn.jsdelivr.net"],
   },
   webpack: (config) => {
-    const aliasPath = path.resolve(__dirname, 'lib/react-spinners-shim.mjs');
-
-    // On couvre à la fois 'react-spinners' et 'react-spinners$' (match exact),
-    // certains résolveurs n’appliquent que l’un des deux.
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      'react-spinners$': aliasPath,
-      'react-spinners': aliasPath,
+      // Quand une lib (ex: @selfxyz/qrcode) fait: import { BounceLoader } from 'react-spinners'
+      // on la redirige vers notre shim qui exporte bien BounceLoader.
+      "react-spinners": require("path").resolve(__dirname, "lib/react-spinners-shim.js"),
     };
-
     return config;
   },
 };
-
 module.exports = nextConfig;
