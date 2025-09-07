@@ -1,9 +1,20 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode";
+// 👉 Import compatible avec les 2 formes d'export du paquet
+import * as SelfQRNS from "@selfxyz/qrcode";
 import { getUniversalLink } from "@selfxyz/core";
 import { ZeroAddress } from "ethers";
+
+// Résout le wrapper quelle que soit la forme d'export (default vs nommé)
+const QRWrapper =
+  // @ts-ignore
+  (SelfQRNS && (SelfQRNS.SelfQRcodeWrapper || SelfQRNS.default))
+    ? (SelfQRNS.SelfQRcodeWrapper || SelfQRNS.default)
+    : null;
+
+// Idem pour le builder (normalement export nommé)
+const SelfAppBuilder = SelfQRNS.SelfAppBuilder;
 
 export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   const [selfApp, setSelfApp] = useState(null);
@@ -11,7 +22,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   const [ready, setReady] = useState(false);
   const [err, setErr] = useState(null);
 
-  // portal: on rend le modal directement dans <body> (immanquable)
+  // portal: on rend le modal directement dans <body>
   const [mounted, setMounted] = useState(false);
   const [portalEl, setPortalEl] = useState(null);
 
@@ -39,6 +50,10 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         process.env.NEXT_PUBLIC_SELF_ENDPOINT ||
         `${origin}/api/self/verify`;
 
+      if (!SelfAppBuilder) {
+        throw new Error("SelfAppBuilder introuvable depuis @selfxyz/qrcode");
+      }
+
       const app = new SelfAppBuilder({
         version: 2,
         appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
@@ -52,13 +67,14 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         userIdType: "hex",
         userDefinedData: "prosperity-passport",
         disclosures: {
-          minimumAge: 18, // doit matcher le backend
+          minimumAge: 18,
           nationality: true,
           gender: true,
         },
       }).build();
 
       const link = getUniversalLink(app);
+      console.log("[Self] universal link:", link);
       setSelfApp(app);
       setDeeplink(link || "");
       setReady(!!link);
@@ -131,13 +147,27 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
 
         {selfApp ? (
           <div style={{ display: "grid", gap: 12, placeItems: "center" }}>
-            <SelfQRcodeWrapper
-              selfApp={selfApp}
-              type="deeplink"
-              size={260}
-              onSuccess={() => { onClose(); /* TODO: re-fetch "Verified" */ }}
-              onError={(e) => console.error("Self verification failed", e)}
-            />
+            {/* Si le wrapper n'est pas résolu, on affiche un message clair */}
+            {QRWrapper ? (
+              <QRWrapper
+                selfApp={selfApp}
+                type="deeplink"
+                size={260}
+                onSuccess={() => { onClose(); /* TODO: re-fetch "Verified" */ }}
+                onError={(e) => console.error("Self verification failed", e)}
+              />
+            ) : (
+              <div
+                style={{
+                  padding: 12,
+                  background: "rgba(255,255,255,.06)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              >
+                Impossible de charger <code>SelfQRcodeWrapper</code> depuis <code>@selfxyz/qrcode</code>.
+              </div>
+            )}
 
             <button
               onClick={openSelfApp}
