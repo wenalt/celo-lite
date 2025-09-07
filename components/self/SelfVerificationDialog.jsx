@@ -9,6 +9,8 @@ export default function SelfVerificationDialog({
 }) {
   const [selfApp, setSelfApp] = useState(null);
   const [deeplink, setDeeplink] = useState("");
+  const [ready, setReady] = useState(false);
+  const [err, setErr] = useState(null);
 
   const uid = useMemo(
     () => (userAddress ?? ZeroAddress),
@@ -18,27 +20,39 @@ export default function SelfVerificationDialog({
   useEffect(() => {
     if (!open) return;
 
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const endpoint = `${origin}/api/self/verify`;
+    (async () => {
+      try {
+        setErr(null);
+        setReady(false);
 
-    const app = new SelfAppBuilder({
-      version: 2,
-      appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
-      scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
-      endpoint,
-      userId: uid,
-      endpointType: process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true" ? "staging_https" : "prod_https",
-      userIdType: "hex",
-      userDefinedData: "prosperity-passport",
-      disclosures: {
-        minimumAge: 18,   // doit matcher le backend
-        nationality: true,
-        gender: true,
-      },
-    }).build();
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const endpoint = `${origin}/api/self/verify`;
 
-    setSelfApp(app);
-    setDeeplink(getUniversalLink(app));
+        const app = new SelfAppBuilder({
+          version: 2,
+          appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
+          scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
+          endpoint,
+          userId: uid,
+          endpointType: process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true" ? "staging_https" : "prod_https",
+          userIdType: "hex",
+          userDefinedData: "prosperity-passport",
+          disclosures: {
+            minimumAge: 18, // DOIT matcher le backend
+            nationality: true,
+            gender: true,
+          },
+        }).build();
+
+        const link = getUniversalLink(app);
+        setSelfApp(app);
+        setDeeplink(link);
+        setReady(true);
+      } catch (e) {
+        console.error(e);
+        setErr(e?.message || "Failed to initialize Self");
+      }
+    })();
   }, [open, uid]);
 
   if (!open) return null;
@@ -51,27 +65,43 @@ export default function SelfVerificationDialog({
           Scanne le QR avec Self (desktop) ou ouvre l’app (mobile).
         </p>
 
+        {/* état/debug minimal */}
+        <p className="text-xs opacity-60 mb-2">
+          Status: {ready ? "Ready" : "Not ready"}{err ? ` — ${err}` : ""}
+        </p>
+
         {selfApp ? (
           <div className="space-y-3">
-            {/* QR pour desktop */}
+            {/* QR pour desktop (md et +) */}
             <div className="hidden md:block">
               <SelfQRcodeWrapper
                 selfApp={selfApp}
                 onSuccess={() => {
-                  // TODO: re-fetch score/état si tu en as un
-                  onClose();
+                  onClose(); // TODO: re-fetch ton score ici si besoin
                 }}
                 onError={() => console.error("Self verification failed")}
               />
             </div>
 
-            {/* Deeplink pour mobile */}
+            {/* Deeplink pour mobile (toujours visible) */}
             <button
-              className="md:hidden w-full rounded-xl py-2 bg-white/10"
-              onClick={() => window.open(deeplink, "_blank")}
+              className="w-full rounded-xl py-2 bg-white/10 disabled:opacity-60"
+              onClick={() => {
+                if (!deeplink) return;
+                // Préfère location.href pour éviter les bloqueurs de popup (iOS/Safari)
+                window.location.href = deeplink;
+              }}
+              disabled={!deeplink}
             >
               Ouvrir l’app Self
             </button>
+
+            {/* Lien fallback affiché sous le bouton (utile si navigateur bloque) */}
+            {deeplink ? (
+              <p className="text-xs break-all opacity-70">
+                <a href={deeplink}>Si rien ne se passe, appuie ici</a>
+              </p>
+            ) : null}
           </div>
         ) : (
           <div>Chargement…</div>
