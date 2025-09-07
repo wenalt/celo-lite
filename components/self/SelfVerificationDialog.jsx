@@ -90,8 +90,27 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
   const mobile = isMobileUA();
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
-      <div className="bg-neutral-900 rounded-2xl p-6 w-full max-w-md">
+    <div
+  style={{
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,.5)",
+    display: "grid",
+    placeItems: "center",
+    padding: 16,
+    zIndex: 9999,
+  }}
+>
+  <div
+    style={{
+      background: "var(--card, #121212)",
+      color: "inherit",
+      borderRadius: 16,
+      padding: 24,
+      width: "100%",
+      maxWidth: 420,
+    }}
+  >
         <h2 className="text-xl font-semibold mb-2">Self.xyz Verification</h2>
         <p className="text-sm opacity-80 mb-3">
           Scanne le QR (desktop) ou ouvre l’app Self (mobile).
