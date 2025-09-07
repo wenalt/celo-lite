@@ -7,12 +7,12 @@ const CARD = "card";
 /** Load WalletConnect EthereumProvider (ESM via jsDelivr) */
 async function getEthereumProviderClass() {
   if (typeof window === "undefined") return null;
-  if (window.__WCEthereumProvider) return window.__WCEthereumProvider;
   const mod = await import(
     "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
   );
-  window.__WCEthereumProvider = mod.EthereumProvider;
-  return window.__WCEthereumProvider;
+  return mod.EthereumProvider;
+}
+
 }
 
 const CELO_CHAIN_ID = 42220;
