@@ -19,6 +19,7 @@ Live: https://celo-lite.vercel.app
 - 🟡 Direct links: Mondo, Governance, Prosperity Passport, Layer3 (Celo)
 - 🌓 Auto + manual theme (light/dark)
 - 📱 Clean UI / centered layout, Inter font
+- ✅ **Self Protocol verification** (QR desktop + mobile deeplink, ZK proofs)
 
 ## Getting Started
 
@@ -27,8 +28,11 @@ Live: https://celo-lite.vercel.app
 pnpm i
 # or
 npm i
+
 # 2) env
 cp .env.example .env.local
 # edit .env.local with your WalletConnect Project ID
+# and Self config (see below)
+
 # 3) dev
 npm run dev
