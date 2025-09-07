@@ -224,10 +224,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:title" content="Celo Lite" />
         <meta property="og:description" content="Ecosystem · Staking · Governance" />
-        <meta property="og:image" content="/og.png" />
+        <meta property="og:image" content="/og.png?v=2" />
 
         {/* favicon simple via /icon.png */}
-        <link rel="icon" href="/icon.png" />
+        <link rel="icon" href="/icon.png?v=2" />
 
         {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
