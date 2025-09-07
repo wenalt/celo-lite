@@ -1,58 +1,57 @@
-// pages/index.js
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
 const BTN = "btn";
 const CARD = "card";
 
-/** 1) Essaie l’ESM (CDN), 2) fallback UMD local (/public/vendor/wc-eth.js) */
+/** Load WalletConnect EthereumProvider (ESM via jsDelivr) */
 async function getEthereumProviderClass() {
   if (typeof window === "undefined") return null;
+  if (window.__WCEthereumProvider) return window.__WCEthereumProvider;
+  const mod = await import(
+    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
+  );
+  window.__WCEthereumProvider = mod.EthereumProvider;
+  return window.__WCEthereumProvider;
+}
 
-  // ESM côté client (pas de globals à gérer)
+const CELO_CHAIN_ID = 42220;
+const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
+
+function formatCELO(weiHex) {
+  if (!weiHex) return "0";
   try {
-    const mod = await import(
-      "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.21.5/dist/index.js"
-    );
-    return mod.EthereumProvider;
-  } catch (e) {
-    console.warn("WC ESM import failed, falling back to UMD…", e);
+    const wei = BigInt(weiHex);
+    const whole = wei / 1000000000000000000n;
+    const frac = (wei % 1000000000000000000n)
+      .toString()
+      .padStart(18, "0")
+      .slice(0, 4);
+    return `${whole}.${frac}`;
+  } catch {
+    return "0";
   }
-
-  // Fallback UMD local (copie de index.umd.js dans /public/vendor/wc-eth.js)
-  if (!window.WalletConnectEthereumProvider?.EthereumProvider) {
-    await new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.src = "/vendor/wc-eth.js?v=2.21.5";
-      s.async = false;
-      s.onload = resolve;
-      s.onerror = resolve;
-      document.head.appendChild(s);
-    });
-  }
-  return window.WalletConnectEthereumProvider?.EthereumProvider || null;
 }
 
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [wcProvider, setWcProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [balance, setBalance] = useState(null);
 
   const projectId =
     process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
     "138901e6be32b5e78b59aa262e517fd0";
-  const CELO_CHAIN_ID = 42220;
 
   const [theme, setTheme] = useState("auto");
 
   useEffect(() => {
-    const saved =
-      typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
+    const saved = localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto")
       setTheme(saved);
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
     const root = document.documentElement;
     if (theme === "light") root.setAttribute("data-theme", "light");
     else if (theme === "dark") root.setAttribute("data-theme", "dark");
@@ -64,13 +63,31 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
+  async function refreshStatus(p = wcProvider, addr = address) {
+    if (!p || !addr) return;
+    try {
+      const [cid, bal] = await Promise.all([
+        p.request({ method: "eth_chainId" }),
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
+      ]);
+      setChainId(cid);
+      setBalance(bal);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   async function ensureProvider() {
     if (wcProvider) return wcProvider;
 
-    const EthereumProvider = await getEthereumProviderClass();
-    if (!EthereumProvider) {
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("No EthereumProvider class");
+    } catch (e) {
+      console.warn("Failed to import WC EthereumProvider ESM", e);
       alert(
-        "WalletConnect failed to load (ESM + UMD). Hard refresh (Ctrl/Cmd+Shift+R) and retry."
+        "WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry."
       );
       return null;
     }
@@ -98,8 +115,26 @@ export default function Home() {
       },
     });
 
-    provider.on("accountsChanged", (accs) => setAddress(accs?.[0] || null));
-    provider.on("disconnect", () => setAddress(null));
+    provider.on("accountsChanged", (accs) => {
+      const a = accs?.[0] || null;
+      setAddress(a);
+      if (a) refreshStatus(provider, a);
+      else {
+        setBalance(null);
+      }
+    });
+
+    provider.on("chainChanged", (cid) => {
+      setChainId(cid);
+      if (address) refreshStatus(provider, address);
+    });
+
+    provider.on("disconnect", () => {
+      setAddress(null);
+      setChainId(null);
+      setBalance(null);
+    });
+
     setWcProvider(provider);
     return provider;
   }
@@ -109,32 +144,41 @@ export default function Home() {
     if (!provider) return;
     try {
       await provider.connect();
-      setAddress(provider.accounts?.[0] || null);
+      const addr = provider.accounts?.[0] || null;
+      setAddress(addr);
 
-      const celoHex = `0x${CELO_CHAIN_ID.toString(16)}`;
-      if (provider.chainId !== celoHex) {
+      const currentCid =
+        provider.chainId ||
+        (await provider.request({ method: "eth_chainId" }));
+      setChainId(currentCid);
+
+      if (currentCid !== CELO_HEX) {
         try {
           await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: celoHex }],
+            params: [{ chainId: CELO_HEX }],
           });
+          setChainId(CELO_HEX);
         } catch {
           try {
             await provider.request({
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: celoHex,
+                  chainId: CELO_HEX,
                   chainName: "Celo Mainnet",
-                  rpcUrls: ["https://forno.celo.org"],
+                  rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
                   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
                   blockExplorerUrls: ["https://celoscan.io/"],
                 },
               ],
             });
+            setChainId(CELO_HEX);
           } catch {}
         }
       }
+
+      await refreshStatus(provider, addr);
     } catch (e) {
       console.error(e);
     }
@@ -145,11 +189,12 @@ export default function Home() {
       await wcProvider?.disconnect();
     } catch {}
     setAddress(null);
+    setChainId(null);
+    setBalance(null);
   }
 
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
-  const themeLabel =
-    theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
+  const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
@@ -158,10 +203,7 @@ export default function Home() {
         <title>Celo Lite — Ecosystem · Staking · Governance</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:title" content="Celo Lite" />
-        <meta
-          property="og:description"
-          content="Ecosystem · Staking · Governance"
-        />
+        <meta property="og:description" content="Ecosystem · Staking · Governance" />
         <meta property="og:image" content="/og.png" />
 
         {/* Inter font */}
@@ -226,56 +268,44 @@ export default function Home() {
             </div>
           </header>
 
+          {/* NEW: Wallet status card */}
+          <section className={CARD}>
+            <h2>Wallet</h2>
+            {address ? (
+              <>
+                <p><b>{short(address)}</b></p>
+                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId || "-"}{" "}
+                  {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
+                </p>
+                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
+              </>
+            ) : (
+              <p>Connect to show status.</p>
+            )}
+          </section>
+
           <section className={CARD}>
             <h2>Governance</h2>
-            <p>
-              Get voting power by staking on a validator, then participate in
-              proposals.
-            </p>
+            <p>Get voting power by staking on a validator, then participate in proposals.</p>
             <div className="btns">
-              <a
-                className={BTN}
-                href="https://mondo.celo.org/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open Mondo
-              </a>
-              <a
-                className={BTN}
-                href="https://mondo.celo.org/governance"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Browse Governance
-              </a>
+              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
+              <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
             </div>
-            <p className="hint">
-              opens in the embedded browser — you’ll use <b>your</b> EVM wallet.
-            </p>
+            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
           <section className={CARD}>
             <h2>Prosperity Passport</h2>
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
-              <a
-                className={BTN}
-                href="https://pass.celopg.eco/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open CeloPG
-              </a>
+              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
             </div>
           </section>
 
           <section className={CARD}>
             <h2>Layer3 quests (current season)</h2>
-            <p>
-              Ongoing quests on Celo to learn, build reputation and stay
-              consistent.
-            </p>
+            <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
             <div className="btns">
               <a
                 className={BTN}
@@ -297,18 +327,12 @@ export default function Home() {
                 rel="noreferrer"
                 title="@Celo on X"
               >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden
-                >
-                  <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z" />
+                {/* X icon */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
                 <span>@Celo</span>
               </a>
-
               <a
                 className="icon-link"
                 href="https://t.me/+3uD9NKPbStYwY2Nk"
@@ -316,248 +340,75 @@ export default function Home() {
                 rel="noreferrer"
                 title="Support CeloPG"
               >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="#2AABEE"
-                  aria-hidden
-                >
-                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
+                {/* Telegram */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
                 <span className="label">Support CeloPG</span>
               </a>
             </div>
-
             <p className="madeby">
-              Questions or suggestions? ping me on farcaster or join the
-              Prosperity Passport support Telegram channel
+              Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel
             </p>
           </footer>
         </div>
       </main>
 
       <style jsx global>{`
-        :root {
-          --bg: #f6df3a;
-          --text: #0b0b0b;
-          --muted: #4b5563;
-          --ring: rgba(0, 0, 0, 0.08);
-          --card: #ffffff;
-          --btn-bg: #0b0b0b;
-          --btn-fg: #ffffff;
+        :root{
+          --bg:#F6DF3A;
+          --text:#0b0b0b;
+          --muted:#4b5563;
+          --ring:rgba(0,0,0,.08);
+          --card:#ffffff;
+          --btn-bg:#0b0b0b;
+          --btn-fg:#ffffff;
         }
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --bg: #0b0b0b;
-            --text: #f4f4f5;
-            --muted: #a1a1aa;
-            --ring: rgba(255, 255, 255, 0.12);
-            --card: #121212;
-            --btn-bg: #f4f4f5;
-            --btn-fg: #0b0b0b;
+        @media (prefers-color-scheme: dark){
+          :root{
+            --bg:#0b0b0b; --text:#f4f4f5; --muted:#a1a1aa; --ring:rgba(255,255,255,.12);
+            --card:#121212; --btn-bg:#f4f4f5; --btn-fg:#0b0b0b;
           }
         }
-        [data-theme="light"] {
-          --bg: #f6df3a;
-          --text: #0b0b0b;
-          --muted: #4b5563;
-          --ring: rgba(0, 0, 0, 0.08);
-          --card: #fff;
-          --btn-bg: #0b0b0b;
-          --btn-fg: #fff;
-        }
-        [data-theme="dark"] {
-          --bg: #0b0b0b;
-          --text: #f4f4f5;
-          --muted: #a1a1aa;
-          --ring: rgba(255, 255, 255, 0.12);
-          --card: #121212;
-          --btn-bg: #f4f4f5;
-          --btn-fg: #0b0b0b;
-        }
+        [data-theme="light"]{ --bg:#F6DF3A; --text:#0b0b0b; --muted:#4b5563; --ring:rgba(0,0,0,.08); --card:#fff; --btn-bg:#0b0b0b; --btn-fg:#fff; }
+        [data-theme="dark"]{ --bg:#0b0b0b; --text:#f4f4f5; --muted:#a1a1aa; --ring:rgba(255,255,255,.12); --card:#121212; --btn-bg:#f4f4f5; --btn-fg:#0b0b0b; }
 
-        * {
-          box-sizing: border-box;
-        }
-        html,
-        body {
-          margin: 0;
-          font-family: Inter, ui-sans-serif, -apple-system, Segoe UI, Roboto,
-            Helvetica, Arial;
-          color: var(--text);
-          background: var(--bg);
-        }
-        .page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-        }
-        .wrap {
-          width: 100%;
-          max-width: 820px;
-          margin: 0 auto;
-          padding: 32px 20px;
-        }
+        *{ box-sizing:border-box }
+        html,body{ margin:0; font-family:Inter,ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--text); background:var(--bg); }
+        .page{ min-height:100vh; display:flex; align-items:center; }
+        .wrap{ width:100%; max-width:820px; margin:0 auto; padding:32px 20px; }
 
-        .head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 18px;
-        }
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        h1 {
-          font-size: 28px;
-          font-weight: 700;
-          line-height: 1.1;
-          margin: 0;
-        }
-        .tagline {
-          margin: 2px 0 0;
-          color: var(--muted);
-        }
-        .right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+        .head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+        .brand{ display:flex; align-items:center; gap:12px; }
+        h1{ font-size:28px; font-weight:700; line-height:1.1; margin:0 }
+        .tagline{ margin:2px 0 0; color:var(--muted) }
+        .right{ display:flex; align-items:center; gap:12px; }
 
-        .theme {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 10px;
-          border-radius: 10px;
-          background: var(--card);
-          border: 1px solid var(--ring);
-          color: inherit;
-          cursor: pointer;
-        }
-        .theme .emoji {
-          font-size: 14px;
-        }
-        .theme .label {
-          font-size: 13px;
-          color: var(--muted);
-        }
-        @media (max-width: 520px) {
-          .theme .label {
-            display: none;
-          }
-        }
+        .theme{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; cursor:pointer; }
+        .theme .emoji{ font-size:14px; } .theme .label{ font-size:13px; color:var(--muted) }
+        @media (max-width:520px){ .theme .label{ display:none } }
 
-        .fc {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          color: inherit;
-          padding: 6px 10px;
-          border-radius: 10px;
-          background: var(--card);
-          border: 1px solid var(--ring);
-        }
-        .wc {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .addr {
-          font-variant-numeric: tabular-nums;
-          background: var(--card);
-          border: 1px solid var(--ring);
-          padding: 6px 10px;
-          border-radius: 10px;
-        }
+        .fc{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        .wc{ display:flex; align-items:center; gap:8px; }
+        .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
-        .card {
-          background: var(--card);
-          border: 1px solid var(--ring);
-          border-radius: 16px;
-          padding: 18px;
-          margin-top: 14px;
-          text-align: center;
-        }
-        .card h2 {
-          margin: 0 0 8px;
-          font-size: 20px;
-        }
-        .card p {
-          margin: 0 0 10px;
-          color: var(--muted);
-        }
-        .btns {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin: 8px 0 6px;
-          justify-content: center;
-        }
+        .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; margin-top:14px; text-align:center; }
+        .card h2{ margin:0 0 8px; font-size:20px; }
+        .card p{ margin:0 0 10px; color:var(--muted) }
+        .btns{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 6px; justify-content:center; }
 
-        .btn {
-          appearance: none;
-          border: 0;
-          background: var(--btn-bg);
-          color: var(--btn-fg);
-          padding: 10px 14px;
-          border-radius: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .btn[disabled] {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .btn:hover:not([disabled]) {
-          opacity: 0.92;
-        }
+        .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg); padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+        .btn[disabled]{ opacity:.6; cursor:not-allowed }
+        .btn:hover:not([disabled]){ opacity:.92 }
 
-        .foot {
-          margin-top: 18px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .social {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .icon-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 10px;
-          border-radius: 10px;
-          background: var(--card);
-          border: 1px solid var(--ring);
-          color: inherit;
-          text-decoration: none;
-        }
-        .icon-link .label {
-          display: none;
-          color: inherit;
-        }
-        .icon-link:hover .label {
-          display: inline;
-        }
-        .madeby {
-          color: var(--muted);
-          margin: 0;
-          text-align: center;
-        }
+        .ok{ color: var(--muted); }
+        .warn{ color:#b91c1c; font-weight:600; }
+
+        .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+        .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
+        .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
+        .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
+        .madeby{ color:var(--muted); margin:0; text-align:center; }
       `}</style>
     </>
   );
