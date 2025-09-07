@@ -264,6 +264,37 @@ export default function Home() {
             </div>
           </section>
 
+              
+<section className={CARD}>
+  <h2>Ecosystem</h2>
+  <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
+  <div className="btns">
+    <a
+      className={BTN}
+      href="https://www.glodollar.org/"
+      target="_blank"
+      rel="noreferrer"
+      title="USD Glo Dollar"
+    >
+      USD Glo Dollar
+    </a>
+    <a
+      className={BTN}
+      href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548"
+      target="_blank"
+      rel="noreferrer"
+      title="Retire Eco Credits on Regen Atlas"
+    >
+      Retire Eco Credits (Regen Atlas)
+    </a>
+  </div>
+  <p className="hint">
+    Tip: USDGLO holdings can count toward Prosperity Pass tiers; Eco Credit
+    retirements generate on-chain certificates.
+  </p>
+</section>
+
+              
           <section className={CARD}>
             <h2>Layer3 quests (current season)</h2>
             <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
