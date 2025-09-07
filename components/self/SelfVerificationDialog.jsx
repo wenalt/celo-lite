@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import SelfQRcodeWrapper, { SelfAppBuilder } from "@selfxyz/qrcode";
+import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode"; // ⬅ import nommé
 import { getUniversalLink } from "@selfxyz/core";
 import { ZeroAddress } from "ethers";
 
@@ -14,6 +14,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
 
   useEffect(() => {
     if (!open) return;
+
     (async () => {
       try {
         setErr(null);
@@ -23,19 +24,19 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
         const endpoint = `${origin}/api/self/verify`;
 
         const app = new SelfAppBuilder({
+          version: 2, // ⬅ important
           appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Celo Lite",
           scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "celo-lite",
           endpoint,
-          // endpointType: 'staging_https' // auto par défaut; décommente si tu veux forcer
           userId: uid,
+          endpointType: process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true" ? "staging_https" : "prod_https", // ⬅ important
           userIdType: "hex",
           userDefinedData: "prosperity-passport",
           disclosures: {
-            minimumAge: 18,      // DOIT matcher le backend
+            minimumAge: 18,   // doit matcher le backend
             nationality: true,
             gender: true,
           },
-          // devMode: process.env.NEXT_PUBLIC_SELF_USE_MOCK === "true",
         }).build();
 
         const link = getUniversalLink(app);
@@ -53,7 +54,7 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
     if (!deeplink) return;
 
     try {
-      // 1) méthode la plus robuste : ancre invisible + click programmatique
+      // 1) ancre invisible + click programmatique (le plus fiable)
       const a = document.createElement("a");
       a.href = deeplink;
       a.rel = "noopener";
@@ -62,17 +63,11 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
       a.click();
       a.remove();
 
-      // 2) petit fallback si le navigateur ignore le click programmatique
-      setTimeout(() => {
-        try {
-          window.open(deeplink, "_blank", "noopener");
-        } catch {}
-      }, 120);
+      // 2) fallback popup
+      setTimeout(() => { try { window.open(deeplink, "_blank", "noopener"); } catch {} }, 120);
 
       // 3) dernier filet : navigation forcée
-      setTimeout(() => {
-        try { window.location.href = deeplink; } catch {}
-      }, 260);
+      setTimeout(() => { try { window.location.href = deeplink; } catch {} }, 260);
     } catch (e) {
       console.error("deeplink open error", e);
     }
@@ -95,14 +90,12 @@ export default function SelfVerificationDialog({ open, onClose, userAddress }) {
 
         {selfApp ? (
           <div className="space-y-3">
-            {/* QR toujours visible (utile même sur mobile/tablette) */}
+            {/* QR (utile même sur mobile/tablette) */}
             <div className="grid place-items-center">
               <SelfQRcodeWrapper
                 selfApp={selfApp}
-                onSuccess={() => {
-                  onClose(); // TODO: re-fetch état "Verified" si tu en as un
-                }}
-                onError={() => console.error("Self verification failed")}
+                onSuccess={() => { onClose(); /* TODO: re-fetch état “Verified” */ }}
+                onError={(e) => console.error("Self verification failed", e)}
                 size={260}
               />
             </div>
