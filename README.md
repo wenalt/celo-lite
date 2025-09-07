@@ -32,7 +32,7 @@ npm i
 # 2) env
 cp .env.example .env.local
 # edit .env.local with your WalletConnect Project ID
-# and Self config (see below)
+# and Self config 
 
 # 3) dev
 npm run dev
