@@ -2,8 +2,8 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { sdk } from "@farcaster/miniapp-sdk";
 
-// dialog Self en client-only
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
@@ -12,7 +12,6 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
-// charge la classe EthereumProvider depuis le package npm (client-only)
 async function getEthereumProviderClass() {
   if (typeof window === "undefined") return null;
   const mod = await import("@walletconnect/ethereum-provider");
@@ -40,20 +39,18 @@ export default function Home() {
   const [chainId, setChainId] = useState(null);
   const [balance, setBalance] = useState(null);
 
-  const projectId =
-    process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
-    "138901e6be32b5e78b59aa262e517fd0";
+  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  // 👉 Light par défaut (mais on respecte la préférence sauvegardée s’il y en a une)
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") return "light";
-    const saved = localStorage.getItem("celo-lite-theme");
-    return saved === "light" || saved === "dark" || saved === "auto" ? saved : "light";
-  });
-
+  const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // auto-ouvrir le modal si l’URL contient ?self=1
+  useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
+    if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -61,7 +58,6 @@ export default function Home() {
     }
   }, []);
 
-  // applique le thème (light par défaut) + persistance
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -97,7 +93,6 @@ export default function Home() {
       EthereumProvider = await getEthereumProviderClass();
       if (!EthereumProvider) throw new Error("EthereumProvider class missing");
     } catch (e) {
-      console.warn("Failed to import @walletconnect/ethereum-provider", e);
       alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
       return null;
     }
@@ -117,10 +112,7 @@ export default function Home() {
       metadata: {
         name: "Celo Lite",
         description: "Ecosystem · Staking · Governance",
-        url:
-          typeof location !== "undefined"
-            ? location.origin
-            : "https://celo-lite.vercel.app",
+        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
         icons: ["/icon.png"],
       },
     });
@@ -155,36 +147,29 @@ export default function Home() {
       const addr = provider.accounts?.[0] || null;
       setAddress(addr);
 
-      const currentCid =
-        provider.chainId || (await provider.request({ method: "eth_chainId" }));
+      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
       setChainId(currentCid);
 
       if (currentCid !== CELO_HEX) {
         try {
-          await provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: CELO_HEX }],
-          });
+          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CELO_HEX }] });
           setChainId(CELO_HEX);
         } catch {
           try {
             await provider.request({
               method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: CELO_HEX,
-                  chainName: "Celo Mainnet",
-                  rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
-                  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-                  blockExplorerUrls: ["https://celoscan.io/"],
-                },
-              ],
+              params: [{
+                chainId: CELO_HEX,
+                chainName: "Celo Mainnet",
+                rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
+                nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+                blockExplorerUrls: ["https://celoscan.io/"],
+              }],
             });
             setChainId(CELO_HEX);
           } catch {}
         }
       }
-
       await refreshStatus(provider, addr);
     } catch (e) {
       console.error(e);
@@ -192,12 +177,8 @@ export default function Home() {
   }
 
   async function disconnect() {
-    try {
-      await wcProvider?.disconnect();
-    } catch {}
-    setAddress(null);
-    setChainId(null);
-    setBalance(null);
+    try { await wcProvider?.disconnect(); } catch {}
+    setAddress(null); setChainId(null); setBalance(null);
   }
 
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
@@ -212,6 +193,7 @@ export default function Home() {
         <meta property="og:title" content="Celo Lite" />
         <meta property="og:description" content="Ecosystem · Staking · Governance" />
         <meta property="og:image" content="/og.png" />
+        <link rel="icon" href="/icon.png" />
 
         {/* Mini App + Frame embeds */}
         <meta
@@ -249,81 +231,58 @@ export default function Home() {
           })}
         />
 
-        {/* Inter */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="page">
         <div className="wrap">
-          <header className="head">
+          {/* ======= HEADER (new) ======= */}
+          <header className="topbar">
+            {/* Left: brand */}
             <div className="brand">
-              <img src="/icon.png" alt="Celo Lite" width="40" height="40" />
-              <div>
+              <img className="brand-logo" src="/icon.png" alt="Celo Lite" width="36" height="36" />
+              <div className="brand-text">
                 <h1>Celo Lite</h1>
                 <p className="tagline">Ecosystem · Staking · Governance</p>
               </div>
             </div>
 
-            <div className="right">
-              {/* thème */}
-              <button className="theme" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
-                <span className="emoji">{themeIcon}</span>
-                <span className="label">{themeLabel}</span>
-              </button>
+            {/* Center: perfectly centered CeloPG */}
+            <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
+              <img src="/celopg.png" alt="CeloPG" />
+            </a>
 
-              {/* Farcaster */}
-              <a
-                className="fc"
-                href="https://warpcast.com/wenaltszn.eth"
-                target="_blank"
-                rel="noreferrer"
-                title="Farcaster profile"
-              >
-                <img src="/farcaster.png" alt="Farcaster" width="22" height="22" />
+            {/* Right: actions pinned far right */}
+            <div className="actions">
+              {address ? (
+                <div className="wallet-inline">
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                </div>
+              ) : (
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                  Connect Wallet
+                </button>
+              )}
+
+              <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
+                <img className="icon" src="/farcaster.png" alt="" />
                 <span>@wenaltszn.eth</span>
               </a>
 
-              {/* GitHub */}
-              <a
-                className="fc"
-                href="https://github.com/wenalt"
-                target="_blank"
-                rel="noreferrer"
-                title="GitHub profile"
-              >
-                <img src="/github.svg" alt="GitHub" width="22" height="22" />
+              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                <img className="icon" src="/github.svg" alt="" />
                 <span>GitHub</span>
               </a>
 
-              {/* Wallet */}
-              <div className="wc">
-                {address ? (
-                  <>
-                    <span className="addr">{short(address)}</span>
-                    <button className={BTN} onClick={disconnect}>
-                      Disconnect
-                    </button>
-                  </>
-                ) : (
-                  <button className={BTN} onClick={connect}>
-                    Connect Wallet
-                  </button>
-                )}
-              </div>
+              <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+                <span className="emoji">{themeIcon}</span>
+                <span>{themeLabel}</span>
+              </button>
             </div>
           </header>
-
-          {/* CeloPG au centre, si tu l'utilises */}
-          <div className="celopg-banner">
-            <a href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
-              <img src="/celopg.png" alt="CeloPG" width="36" height="36" />
-            </a>
-          </div>
 
           {/* Wallet */}
           <section className={CARD}>
@@ -362,7 +321,6 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Dialog Self */}
           {openSelf && (
             <SelfVerificationDialog
               open={openSelf}
@@ -379,13 +337,7 @@ export default function Home() {
               <a className={BTN} href="https://www.glodollar.org/" target="_blank" rel="noreferrer" title="USD Glo Dollar">
                 USD Glo Dollar
               </a>
-              <a
-                className={BTN}
-                href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548"
-                target="_blank"
-                rel="noreferrer"
-                title="Retire Eco Credits on Regen Atlas"
-              >
+              <a className={BTN} href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" target="_blank" rel="noreferrer" title="Retire Eco Credits on Regen Atlas">
                 Retire Eco Credits (Regen Atlas)
               </a>
             </div>
@@ -396,18 +348,15 @@ export default function Home() {
             <h2>Routines</h2>
             <p>Keep a healthy onchain cadence: learn, earn, and keep reputation active.</p>
             <div className="btns">
-              <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">
-                Open Layer3
-              </a>
-              <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">
-                Claim $G
-              </a>
+              <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">Open Layer3</a>
+              <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">Claim $G</a>
             </div>
           </section>
 
           {/* Builders Programs */}
           <section className={CARD}>
             <h2>Builders Programs</h2>
+            <p>Programs that fund and accelerate public-good builders on Celo.</p>
             <div className="btns">
               <a className={BTN} href="https://www.celopg.eco/programs/goodbuilders-round-2" target="_blank" rel="noreferrer">Goodbuilders Round 2</a>
               <a className={BTN} href="https://www.celopg.eco/programs/proof-of-ship-s1" target="_blank" rel="noreferrer">Proof Of Ship</a>
@@ -416,40 +365,44 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer social (ordre: X, Support CeloPG, Guild, Self, Discord) */}
+          {/* Footer links (order: X, Support CeloPG, Guild, Self, Discord) */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
-                <span className="label">X</span>
+                <span>@Celo</span>
               </a>
 
               <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
-                <img src="/telegram.svg" alt="" width="22" height="22" />
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
+                </svg>
                 <span className="label">Support CeloPG</span>
               </a>
 
               <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
-                <img src="/guild.jpg" alt="" width="22" height="22" />
-                <span className="label">Guild</span>
+                <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
+                <span className="label">Celo's Communities Guild</span>
               </a>
 
               <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
-                <img src="/telegram.svg" alt="" width="22" height="22" />
-                <span className="label">Self support</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
+                </svg>
+                <span className="label">Self's support Telegram</span>
               </a>
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
-                <img src="/discord.svg" alt="" width="22" height="22" />
+                <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                </svg>
                 <span className="label">Discord</span>
               </a>
             </div>
 
-            <p className="madeby">
-              Questions or suggestions? ping me on Farcaster or join the Prosperity Passport support Telegram channel
-            </p>
+            <p className="madeby">Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel</p>
           </footer>
         </div>
       </main>
@@ -471,39 +424,64 @@ export default function Home() {
         *{ box-sizing:border-box }
         html,body{ margin:0; font-family:Inter,ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--text); background:var(--bg); }
         .page{ min-height:100vh; display:flex; align-items:center; }
-        .wrap{ width:100%; max-width:820px; margin:0 auto; padding:32px 20px; }
+        .wrap{ width:100%; max-width:900px; margin:0 auto; padding:22px 16px; }
 
-        .head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
-        .brand{ display:flex; align-items:center; gap:12px; }
-        h1{ font-size:28px; font-weight:700; line-height:1.1; margin:0 }
-        .tagline{ margin:2px 0 0; color:var(--muted) }
-        .right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        /* ===== Header ===== */
+        .topbar{
+          display:grid;
+          grid-template-columns: auto 1fr auto; /* brand | center | actions */
+          align-items:center;
+          gap:16px;
+          margin-bottom:10px;
+        }
+        .brand{ display:flex; align-items:center; gap:10px; }
+        .brand-logo{ border-radius:8px; display:block; }
+        .brand-text{ line-height:1.1; }
+        h1{ font-size:26px; font-weight:800; margin:0; }
+        .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; font-weight:500; }
 
-        /* ✅ centrage mobile SEULEMENT (sans toucher desktop) */
-        @media (max-width:640px){
-          .head{ flex-direction:column; align-items:center; }
-          .brand{ justify-content:center; text-align:center; }
-          .right{ justify-content:center; width:100%; }
+        /* Centered badge */
+        .centerBadge{
+          justify-self:center;
+          display:flex; align-items:center; justify-content:center;
+          width:44px; height:44px; border-radius:12px;
+          background:var(--card); border:1px solid var(--ring);
+        }
+        .centerBadge img{ width:26px; height:26px; display:block; }
+
+        /* Actions pinned right */
+        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
+        .pill{
+          display:inline-flex; align-items:center; gap:8px;
+          height:36px; min-width:136px; padding:0 12px;
+          border-radius:10px; font-size:13px;
+          background:var(--card); border:1px solid var(--ring); color:inherit;
+        }
+        .pill .icon{ width:16px; height:16px; display:block; }
+        .pill .emoji{ font-size:14px; }
+
+        /* Special, bigger white CTA */
+        .wallet-cta{
+          display:inline-flex; align-items:center; justify-content:center;
+          height:40px; min-width:172px; padding:0 16px;
+          border-radius:12px; font-weight:800; letter-spacing:.1px;
+          background:#fff; color:#0b0b0b; border:1px solid var(--ring);
         }
 
-        .celopg-banner{ display:flex; justify-content:center; margin:6px 0 10px; }
-
-        .fc{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
-        .wc{ display:flex; align-items:center; gap:8px; }
+        .wallet-inline{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
-        .theme{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; cursor:pointer; }
-        .theme .emoji{ font-size:14px; } .theme .label{ font-size:13px; color:var(--muted) }
-        @media (max-width:520px){ .theme .label{ display:none } }
-
-        .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; margin-top:14px; text-align:center; }
+        /* Cards */
+        .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; margin-top:12px; text-align:center; }
         .card h2{ margin:0 0 8px; font-size:20px; }
         .card p{ margin:0 0 10px; color:var(--muted) }
         .btns{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 6px; justify-content:center; }
 
-        .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg);
-              padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
-              text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+        .btn{
+          appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg);
+          padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
+          text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+        }
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
@@ -511,11 +489,31 @@ export default function Home() {
         .ok{ color: var(--muted) }
         .warn{ color:#b91c1c; font-weight:600 }
 
-        .foot{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+        /* Footer */
+        .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
+        .icon-link svg{ display:block; } /* fix discord squish */
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
+
+        /* Mobile layout */
+        @media (max-width:640px){
+          .topbar{
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              "brand actions"
+              "badge badge";
+            row-gap:8px;
+          }
+          .brand{ grid-area: brand; }
+          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
+          h1{ font-size:22px; }
+          .tagline{ font-size:12px; }
+          .pill{ min-width:auto; padding:0 10px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; }
+        }
       `}</style>
     </>
   );
