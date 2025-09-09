@@ -2,7 +2,7 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { sdk } from "@farcaster/miniapp-sdk"; // ⬅️ Mini App SDK
+import { sdk } from "@farcaster/miniapp-sdk"; // Mini App SDK
 
 // charge le dialog en client-only pour éviter les erreurs de SSR
 const SelfVerificationDialog = dynamic(
@@ -41,19 +41,17 @@ export default function Home() {
   const [chainId, setChainId] = useState(null);
   const [balance, setBalance] = useState(null);
 
-  // WC project id (peut venir de Vercel)
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false); // modal Self
 
-  // ✅ Signale à Farcaster que l’UI est prête (sinon contenu masqué dans le webview mobile)
+  // Farcaster Mini App: signaler “ready”
   useEffect(() => {
     (async () => {
       try {
         await sdk.actions.ready();
       } catch (e) {
-        // En dehors de Farcaster (web/desktop), c'est normal si ça throw
         console.debug("MiniApp ready() noop:", e?.message);
       }
     })();
@@ -223,6 +221,7 @@ export default function Home() {
         <meta property="og:title" content="Celo Lite" />
         <meta property="og:description" content="Ecosystem · Staking · Governance" />
         <meta property="og:image" content="/og.png" />
+        <link rel="icon" href="/icon.png" />
 
         {/* ▶️ Farcaster Mini App embed */}
         <meta
@@ -242,7 +241,7 @@ export default function Home() {
             },
           })}
         />
-        {/* ▶️ (Optionnel) compat Frames */}
+        {/* ▶️ Compat Frames (optionnel) */}
         <meta
           name="fc:frame"
           content={JSON.stringify({
@@ -270,23 +269,34 @@ export default function Home() {
       <main className="page">
         <div className="wrap">
           <header className="head">
+            {/* Left: Brand + Theme toggle */}
             <div className="brand">
               <img src="/icon.png" alt="Celo Lite" width="40" height="40" />
               <div>
                 <h1>Celo Lite</h1>
                 <p className="tagline">Ecosystem · Staking · Governance</p>
               </div>
-            </div>
-
-            <div className="right">
               <button className="theme" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
                 <span className="emoji">{themeIcon}</span>
                 <span className="label">{themeLabel}</span>
               </button>
+            </div>
 
+            {/* Center: CeloPG logo */}
+            <div className="center">
+              <a className="celopg" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
+                <img src="/celopg.png" alt="CeloPG" width="28" height="28" />
+              </a>
+            </div>
+
+            {/* Right: socials + wallet */}
+            <div className="right">
               <a className="fc" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                <img src="/farcaster.png" alt="Farcaster" width="22" height="22" />
+                <img src="/farcaster.png" alt="Farcaster" />
                 <span>@wenaltszn.eth</span>
+              </a>
+              <a className="gh" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                <img src="/github.svg" alt="GitHub" />
               </a>
 
               <div className="wc">
@@ -333,13 +343,7 @@ export default function Home() {
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
               <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
-              {/* bouton Self */}
-              <button
-                className={BTN}
-                onClick={() => { console.log("CLICK OPEN"); setOpenSelf(true); }}
-              >
-                Self.xyz Verification
-              </button>
+              <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
             </div>
           </section>
 
@@ -371,12 +375,36 @@ export default function Home() {
             </div>
           </section>
 
+          {/* ✅ Routines (ancien Layer3) */}
           <section className={CARD}>
-            <h2>Layer3 quests (current season)</h2>
-            <p>Ongoing quests on Celo to learn, build reputation and stay consistent.</p>
+            <h2>Routines</h2>
+            <p>Keep a healthy onchain cadence: learn, earn, and keep reputation active.</p>
             <div className="btns">
               <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">
                 Open Layer3
+              </a>
+              <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">
+                Claim $G
+              </a>
+            </div>
+          </section>
+
+          {/* ✅ Builders Programs */}
+          <section className={CARD}>
+            <h2>Builders Programs</h2>
+            <p>Programs that fund and accelerate public-good builders on Celo.</p>
+            <div className="btns">
+              <a className={BTN} href="https://www.celopg.eco/programs/goodbuilders-round-2" target="_blank" rel="noreferrer">
+                Goodbuilders Round 2
+              </a>
+              <a className={BTN} href="https://www.celopg.eco/programs/proof-of-ship-s1" target="_blank" rel="noreferrer">
+                Proof Of Ship
+              </a>
+              <a className={BTN} href="https://www.celopg.eco/programs/proof-of-impact-s1" target="_blank" rel="noreferrer">
+                Proof Of Impact
+              </a>
+              <a className={BTN} href="https://www.celopg.eco/programs/supportstreams1" target="_blank" rel="noreferrer">
+                Support Streams
               </a>
             </div>
           </section>
@@ -394,7 +422,7 @@ export default function Home() {
               {/* Discord */}
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#5865F2" aria-hidden>
-                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0  0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -407,12 +435,18 @@ export default function Home() {
                 <span className="label">Support CeloPG</span>
               </a>
 
-              {/* Telegram Self.xyz support (dernier) */}
+              {/* Telegram Self.xyz support */}
               <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
                 <span className="label">Self's support Telegram</span>
+              </a>
+
+              {/* ✅ Guild communities */}
+              <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
+                <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6 }} />
+                <span className="label">Celo's Communities Guild</span>
               </a>
             </div>
 
@@ -440,19 +474,26 @@ export default function Home() {
         *{ box-sizing:border-box }
         html,body{ margin:0; font-family:Inter,ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--text); background:var(--bg); }
         .page{ min-height:100vh; display:flex; align-items:center; }
-        .wrap{ width:100%; max-width:820px; margin:0 auto; padding:32px 20px; }
+        .wrap{ width:100%; max-width:900px; margin:0 auto; padding:32px 20px; }
 
         .head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
         .brand{ display:flex; align-items:center; gap:12px; }
+        .brand .theme{ margin-left:8px; }
         h1{ font-size:28px; font-weight:700; line-height:1.1; margin:0 }
         .tagline{ margin:2px 0 0; color:var(--muted) }
-        .right{ display:flex; align-items:center; gap:12px; }
 
+        .center{ flex:1; display:flex; justify-content:center; }
+        .celopg{ display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+
+        .right{ display:flex; align-items:center; gap:10px; }
         .theme{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; cursor:pointer; }
         .theme .emoji{ font-size:14px; } .theme .label{ font-size:13px; color:var(--muted) }
         @media (max-width:520px){ .theme .label{ display:none } }
 
-        .fc{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        .fc, .gh{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        .fc img{ width:18px; height:18px; }
+        .gh img{ width:18px; height:18px; }
+
         .wc{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
