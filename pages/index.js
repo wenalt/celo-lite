@@ -238,53 +238,49 @@ export default function Home() {
 
       <main className="page">
         <div className="wrap">
-          {/* HEADER */}
-          <header className="head">
+          {/* ======= HEADER (new) ======= */}
+          <header className="topbar">
             {/* Left: brand */}
             <div className="brand">
-              <img src="/icon.png" alt="Celo Lite" width="36" height="36" />
+              <img className="brand-logo" src="/icon.png" alt="Celo Lite" width="36" height="36" />
               <div className="brand-text">
                 <h1>Celo Lite</h1>
                 <p className="tagline">Ecosystem · Staking · Governance</p>
               </div>
             </div>
 
-            {/* Center: CeloPG absolutely centered to free space on the right */}
-            <div className="center">
-              <a className="celopg" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
-                <img src="/celopg.png" alt="CeloPG" width="26" height="26" />
-              </a>
-            </div>
+            {/* Center: perfectly centered CeloPG */}
+            <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
+              <img src="/celopg.png" alt="CeloPG" />
+            </a>
 
-            {/* Right: push as far right as possible */}
-            <div className="controls">
-              <div className="controls-row">
-                {address ? (
-                  <div className="walletBlock">
-                    <span className="addr">{short(address)}</span>
-                    <button className={BTN} onClick={disconnect}>Disconnect</button>
-                  </div>
-                ) : (
-                  <button className="wallet-btn" onClick={connect} title="Connect wallet">
-                    Connect Wallet
-                  </button>
-                )}
-
-                <a className="top-btn" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                  <img className="btn-icon" src="/farcaster.png" alt="" />
-                  <span className="label">@wenaltszn.eth</span>
-                </a>
-
-                <a className="top-btn" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
-                  <img className="btn-icon" src="/github.svg" alt="" />
-                  <span className="label">GitHub</span>
-                </a>
-
-                <button className="top-btn" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
-                  <span className="emoji">{themeIcon}</span>
-                  <span className="label">{themeLabel}</span>
+            {/* Right: actions pinned far right */}
+            <div className="actions">
+              {address ? (
+                <div className="wallet-inline">
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                </div>
+              ) : (
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                  Connect Wallet
                 </button>
-              </div>
+              )}
+
+              <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
+                <img className="icon" src="/farcaster.png" alt="" />
+                <span>@wenaltszn.eth</span>
+              </a>
+
+              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                <img className="icon" src="/github.svg" alt="" />
+                <span>GitHub</span>
+              </a>
+
+              <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+                <span className="emoji">{themeIcon}</span>
+                <span>{themeLabel}</span>
+              </button>
             </div>
           </header>
 
@@ -369,10 +365,9 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer links */}
+          {/* Footer links (order: X, Support CeloPG, Guild, Self, Discord) */}
           <footer className="foot">
             <div className="social">
-              {/* X */}
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
@@ -380,7 +375,6 @@ export default function Home() {
                 <span>@Celo</span>
               </a>
 
-              {/* Support CeloPG */}
               <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
@@ -388,13 +382,11 @@ export default function Home() {
                 <span className="label">Support CeloPG</span>
               </a>
 
-              {/* Guild */}
               <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
                 <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
                 <span className="label">Celo's Communities Guild</span>
               </a>
 
-              {/* Self support */}
               <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
@@ -402,7 +394,6 @@ export default function Home() {
                 <span className="label">Self's support Telegram</span>
               </a>
 
-              {/* Discord — fix rendering */}
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
                   <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
@@ -433,55 +424,51 @@ export default function Home() {
         *{ box-sizing:border-box }
         html,body{ margin:0; font-family:Inter,ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--text); background:var(--bg); }
         .page{ min-height:100vh; display:flex; align-items:center; }
-        .wrap{ width:100%; max-width:900px; margin:0 auto; padding:24px 16px; }
+        .wrap{ width:100%; max-width:900px; margin:0 auto; padding:22px 16px; }
 
-        /* HEADER */
-        .head{
-          position:relative;
+        /* ===== Header ===== */
+        .topbar{
           display:grid;
-          grid-template-columns: auto 1fr auto; /* brand | spacer | controls */
+          grid-template-columns: auto 1fr auto; /* brand | center | actions */
           align-items:center;
-          gap:8px;
+          gap:16px;
           margin-bottom:10px;
         }
-        .brand{ display:flex; align-items:center; gap:8px; }
-        .brand-text{ display:flex; flex-direction:column; }
-        h1{ font-size:26px; font-weight:700; line-height:1.1; margin:0 }
-        .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; }
+        .brand{ display:flex; align-items:center; gap:10px; }
+        .brand-logo{ border-radius:8px; display:block; }
+        .brand-text{ line-height:1.1; }
+        h1{ font-size:26px; font-weight:800; margin:0; }
+        .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; font-weight:500; }
 
-        /* CeloPG absolutely centered */
-        .center{
-          position:absolute; left:50%; transform:translateX(-50%);
-        }
-        .celopg{
+        /* Centered badge */
+        .centerBadge{
+          justify-self:center;
           display:flex; align-items:center; justify-content:center;
-          width:40px; height:40px; border-radius:10px;
+          width:44px; height:44px; border-radius:12px;
           background:var(--card); border:1px solid var(--ring);
         }
+        .centerBadge img{ width:26px; height:26px; display:block; }
 
-        /* Right controls pinned to the far right */
-        .controls{ justify-self:end; }
-        .controls-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-
-        .top-btn{
-          display:inline-flex; align-items:center; justify-content:center;
-          gap:8px; height:34px; min-width:136px;
-          padding:0 10px; border-radius:10px;
+        /* Actions pinned right */
+        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
+        .pill{
+          display:inline-flex; align-items:center; gap:8px;
+          height:36px; min-width:136px; padding:0 12px;
+          border-radius:10px; font-size:13px;
           background:var(--card); border:1px solid var(--ring); color:inherit;
-          text-decoration:none; font-size:13px;
         }
-        .top-btn .emoji{ font-size:14px; }
-        .top-btn .btn-icon{ width:16px; height:16px; display:block; }
+        .pill .icon{ width:16px; height:16px; display:block; }
+        .pill .emoji{ font-size:14px; }
 
-        /* Special, larger white button for Connect Wallet */
-        .wallet-btn{
+        /* Special, bigger white CTA */
+        .wallet-cta{
           display:inline-flex; align-items:center; justify-content:center;
-          height:38px; min-width:162px; padding:0 14px;
-          border-radius:12px; font-weight:700;
-          background:#ffffff; color:#0b0b0b; border:1px solid var(--ring);
+          height:40px; min-width:172px; padding:0 16px;
+          border-radius:12px; font-weight:800; letter-spacing:.1px;
+          background:#fff; color:#0b0b0b; border:1px solid var(--ring);
         }
 
-        .walletBlock{ display:flex; align-items:center; gap:8px; }
+        .wallet-inline{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
         /* Cards */
@@ -502,29 +489,30 @@ export default function Home() {
         .ok{ color: var(--muted) }
         .warn{ color:#b91c1c; font-weight:600 }
 
-        /* Footer + icon rendering fix */
+        /* Footer */
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; } /* prevents “amoché” look */
+        .icon-link svg{ display:block; } /* fix discord squish */
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* Mobile */
+        /* Mobile layout */
         @media (max-width:640px){
-          .head{
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto;
+          .topbar{
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              "brand actions"
+              "badge badge";
             row-gap:8px;
           }
-          .brand{ justify-content:center; }
-          .center{ position:static; transform:none; }
-          .controls{ justify-self:center; }
-          .controls-row{ justify-content:center; }
-          .top-btn{ min-width: 46%; }
-          .wallet-btn{ min-width: 60%; }
+          .brand{ grid-area: brand; }
+          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
           h1{ font-size:22px; }
-          .celopg{ width:36px; height:36px; }
+          .tagline{ font-size:12px; }
+          .pill{ min-width:auto; padding:0 10px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; }
         }
       `}</style>
     </>
