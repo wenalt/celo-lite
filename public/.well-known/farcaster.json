@@ -1,23 +1,48 @@
 {
-  "name": "Celo Lite",
-  "iconUrl": "https://celo-lite.vercel.app/icon.png",
-  "homeUrl": "https://celo-lite.vercel.app/",
-  "description": "Mini-hub for the Celo Prosperity ecosystem: Mondo staking & governance, CeloPG Prosperity Passport, Layer3 routines, and Self.xyz verification — optimized for Farcaster Mini Apps.",
-  "subtitle": "Mini-hub for the Celo Prosperity ecosystem",
-  "primaryCategory": "productivity",
-  "imageUrl": "https://celo-lite.vercel.app/og.png",
-  "splashImageUrl": "https://celo-lite.vercel.app/icon.png",
-  "splashBackgroundColor": "#f6df3a",
-  "tagline": "Stake, vote, and explore the Celo ecosystem",
-  "tags": ["celo", "governance", "staking", "passport", "prosperity"],
-  "ogTitle": "Celo Lite — Celo mini-hub",
-  "ogDescription": "Stake, vote, and explore Celo.",
-  "ogImageUrl": "https://celo-lite.vercel.app/og.png",
-  "buttonTitle": "Open Celo Lite",
-  "castShareUrl": "https://farcaster.xyz/~/compose?text=Open%20Celo%20Lite&embeds[]=https://celo-lite.vercel.app",
   "accountAssociation": {
     "header": "eyJmaWQiOjUyOTY5MiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDcwM0E1M2UxMzdjODQwMGYyODUzMjRCOUY2ZmNhQzBBMEE1YUMyQTEifQ",
     "payload": "eyJkb21haW4iOiJjZWxvLWxpdGUudmVyY2VsLmFwcCJ9",
     "signature": "MHg1MzM3NzY2N2E2NGFiMGI1Y2UxNzA3YjgyNzEyYmRjZTY1ZWVmZWVkZTEyNTI4OTRkZWFhZDQwMTkwMmZlOTg4NGQxODE0MjI5Y2ZiYmZmNjQxMGM4NWY3ZDJiY2Q1YWE2NzIwNTU3NjVlYTBjOWVlNjAxNGFiM2E0NDI4ZGE1MTFi"
+  },
+
+  "name": "Celo Lite",
+  "iconUrl": "https://celo-lite.vercel.app/icon.png",
+  "homeUrl": "https://celo-lite.vercel.app",
+  "description": "Mini-hub for the Celo Prosperity ecosystem: Mondo staking & governance, CeloPG Passport, Layer3 routines, and Self.xyz verification — optimized for Farcaster Mini Apps.",
+
+  "frame": {
+    "name": "Celo Lite",
+    "version": "1",
+    "iconUrl": "https://celo-lite.vercel.app/icon.png",
+    "homeUrl": "https://celo-lite.vercel.app",
+    "imageUrl": "https://celo-lite.vercel.app/og.png",
+    "buttonTitle": "Open Celo Lite",
+    "splashImageUrl": "https://celo-lite.vercel.app/icon.png",
+    "splashBackgroundColor": "#F6DF3A",
+    "webhookUrl": "https://celo-lite.vercel.app/api/webhook",
+
+    "subtitle": "Mini-hub for the Celo Prosperity ecosystem",
+    "description": "Mini-hub for the Celo Prosperity ecosystem: Mondo staking & governance, CeloPG Prosperity Passport, Layer3 routines, and Self.xyz verification - optimized for Farcaster Mini Apps",
+    "primaryCategory": "productivity",
+
+    "screenshotUrls": [
+      "https://celo-lite.vercel.app/og.png"
+    ],
+
+    "tags": [
+      "celo",
+      "governance",
+      "staking",
+      "walletconnect",
+      "passport",
+      "miniapp"
+    ],
+    "tagline": "Mini-hub Celo Ecosystem",
+
+    "ogTitle": "Celo Lite — Celo mini-hub",
+    "ogDescription": "Celo Lite: stake, vote, and track your Prosperity Passport—built for Farcaster",
+    "ogImageUrl": "https://celo-lite.vercel.app/og.png",
+
+    "castShareUrl": "https://warpcast.com/~/compose?text=Open%20Celo%20Lite&embeds[]=https://celo-lite.vercel.app"
   }
 }
