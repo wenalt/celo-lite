@@ -21,8 +21,8 @@
     "splashBackgroundColor": "#F6DF3A",
     "webhookUrl": "https://celo-lite.vercel.app/api/webhook",
 
-    "subtitle": "Mini-hub for the Celo Prosperity ecosystem",
-    "description": "Mini-hub for the Celo Prosperity ecosystem: Mondo staking & governance, CeloPG Prosperity Passport, Layer3 routines, and Self.xyz verification - optimized for Farcaster Mini Apps",
+    "subtitle": "Mini-hub (Celo Ecosystem)",
+    "description": "Mini-hub for the Celo Prosperity ecosystem - optimized for Farcaster Mini Apps",
     "primaryCategory": "productivity",
 
     "screenshotUrls": [
@@ -30,12 +30,7 @@
     ],
 
     "tags": [
-      "celo",
-      "governance",
-      "staking",
-      "walletconnect",
-      "passport",
-      "miniapp"
+    
     ],
     "tagline": "Mini-hub Celo Ecosystem",
 
