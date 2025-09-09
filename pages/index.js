@@ -70,11 +70,6 @@ export default function Home() {
     }
   }, []);
 
-  // log utile pour debug
-  useEffect(() => {
-    console.log("[Self] openSelf =", openSelf);
-  }, [openSelf]);
-
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -268,36 +263,43 @@ export default function Home() {
 
       <main className="page">
         <div className="wrap">
+          {/* Header en grille: 3 colonnes pour centrer parfaitement CeloPG */}
           <header className="head">
-            {/* Left: Brand + Theme toggle */}
-            <div className="brand">
-              <img src="/icon.png" alt="Celo Lite" width="40" height="40" />
-              <div>
-                <h1>Celo Lite</h1>
-                <p className="tagline">Ecosystem · Staking · Governance</p>
+            {/* Colonne gauche: logo + titre + bouton thème (top-btn) */}
+            <div className="left">
+              <div className="brand">
+                <img src="/icon.png" alt="Celo Lite" width="40" height="40" />
+                <div className="brand-text">
+                  <h1>Celo Lite</h1>
+                  <p className="tagline">Ecosystem · Staking · Governance</p>
+                </div>
               </div>
-              <button className="theme" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+
+              <button className="top-btn" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
                 <span className="emoji">{themeIcon}</span>
                 <span className="label">{themeLabel}</span>
               </button>
             </div>
 
-            {/* Center: CeloPG logo */}
+            {/* Colonne centre: CeloPG parfaitement centré */}
             <div className="center">
               <a className="celopg" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
                 <img src="/celopg.png" alt="CeloPG" width="28" height="28" />
               </a>
             </div>
 
-            {/* Right: socials + wallet */}
+            {/* Colonne droite: Farcaster + GitHub (top-btn identiques) + Wallet */}
             <div className="right">
-              <a className="fc" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                <img src="/farcaster.png" alt="Farcaster" />
-                <span>@wenaltszn.eth</span>
-              </a>
-              <a className="gh" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
-                <img src="/github.svg" alt="GitHub" />
-              </a>
+              <div className="right-top">
+                <a className="top-btn" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
+                  <img className="btn-icon" src="/farcaster.png" alt="" />
+                  <span className="label">@wenaltszn.eth</span>
+                </a>
+                <a className="top-btn" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                  <img className="btn-icon" src="/github.svg" alt="" />
+                  <span className="label">GitHub</span>
+                </a>
+              </div>
 
               <div className="wc">
                 {address ? (
@@ -375,7 +377,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ✅ Routines (ancien Layer3) */}
+          {/* Routines */}
           <section className={CARD}>
             <h2>Routines</h2>
             <p>Keep a healthy onchain cadence: learn, earn, and keep reputation active.</p>
@@ -389,7 +391,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ✅ Builders Programs */}
+          {/* Builders Programs */}
           <section className={CARD}>
             <h2>Builders Programs</h2>
             <p>Programs that fund and accelerate public-good builders on Celo.</p>
@@ -422,7 +424,7 @@ export default function Home() {
               {/* Discord */}
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#5865F2" aria-hidden>
-                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0  0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -443,7 +445,7 @@ export default function Home() {
                 <span className="label">Self's support Telegram</span>
               </a>
 
-              {/* ✅ Guild communities */}
+              {/* Guild communities */}
               <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
                 <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6 }} />
                 <span className="label">Celo's Communities Guild</span>
@@ -476,23 +478,49 @@ export default function Home() {
         .page{ min-height:100vh; display:flex; align-items:center; }
         .wrap{ width:100%; max-width:900px; margin:0 auto; padding:32px 20px; }
 
-        .head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
-        .brand{ display:flex; align-items:center; gap:12px; }
-        .brand .theme{ margin-left:8px; }
+        /* ▶ Header grille 3 colonnes pour centrer CeloPG */
+        .head{
+          display:grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items:center;
+          gap:12px;
+          margin-bottom:18px;
+        }
+
+        .left{ display:flex; align-items:center; gap:12px; }
+        .brand{ display:flex; align-items:center; gap:10px; }
+        .brand-text{ display:flex; flex-direction:column; }
         h1{ font-size:28px; font-weight:700; line-height:1.1; margin:0 }
         .tagline{ margin:2px 0 0; color:var(--muted) }
 
-        .center{ flex:1; display:flex; justify-content:center; }
-        .celopg{ display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
+        .center{ display:flex; justify-content:center; }
+        .celopg{
+          display:flex; align-items:center; justify-content:center;
+          width:44px; height:44px; border-radius:12px;
+          background:var(--card); border:1px solid var(--ring);
+        }
 
-        .right{ display:flex; align-items:center; gap:10px; }
-        .theme{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; cursor:pointer; }
-        .theme .emoji{ font-size:14px; } .theme .label{ font-size:13px; color:var(--muted) }
-        @media (max-width:520px){ .theme .label{ display:none } }
+        .right{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+        .right-top{ display:flex; align-items:center; gap:8px; }
 
-        .fc, .gh{ display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); }
-        .fc img{ width:18px; height:18px; }
-        .gh img{ width:18px; height:18px; }
+        /* ▶ Boutons du haut identiques */
+        .top-btn{
+          display:inline-flex; align-items:center; justify-content:center;
+          gap:8px; height:38px;
+          width:140px; /* largeur uniforme desktop */
+          padding:0 10px; border-radius:10px;
+          background:var(--card); border:1px solid var(--ring); color:inherit;
+          text-decoration:none; font-size:13px;
+          overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+        }
+        .top-btn .emoji{ font-size:14px; }
+        .top-btn .btn-icon{ width:16px; height:16px; display:block; }
+
+        @media (max-width:520px){
+          .top-btn{ width:120px; } /* largeur uniforme mobile */
+          .brand-text h1{ font-size:22px; }
+          .celopg{ width:40px; height:40px; }
+        }
 
         .wc{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
