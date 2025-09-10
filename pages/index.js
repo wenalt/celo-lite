@@ -41,7 +41,8 @@ export default function Home() {
 
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  const [theme, setTheme] = useState("auto");
+  // 👉 default to LIGHT when nothing saved
+  const [theme, setTheme] = useState("light");
   const [openSelf, setOpenSelf] = useState(false);
 
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
@@ -49,6 +50,7 @@ export default function Home() {
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
+    else setTheme("light");
   }, []);
 
   useEffect(() => {
@@ -238,7 +240,7 @@ export default function Home() {
 
       <main className="page">
         <div className="wrap">
-          {/* ======= HEADER (new) ======= */}
+          {/* ======= HEADER ======= */}
           <header className="topbar">
             {/* Left: brand */}
             <div className="brand">
@@ -249,38 +251,42 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Center: perfectly centered CeloPG */}
+            {/* Center: CeloPG badge */}
             <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
-            {/* Right: actions pinned far right */}
+            {/* Right: actions (split rows on mobile) */}
             <div className="actions">
-              {address ? (
-                <div className="wallet-inline">
-                  <span className="addr">{short(address)}</span>
-                  <button className={BTN} onClick={disconnect}>Disconnect</button>
-                </div>
-              ) : (
-                <button className="wallet-cta" onClick={connect} title="Connect wallet">
-                  Connect Wallet
+              <div className="actions-row primary">
+                {address ? (
+                  <div className="wallet-inline">
+                    <span className="addr">{short(address)}</span>
+                    <button className={BTN} onClick={disconnect}>Disconnect</button>
+                  </div>
+                ) : (
+                  <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                    Connect Wallet
+                  </button>
+                )}
+              </div>
+
+              <div className="actions-row secondary">
+                <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
+                  <img className="icon" src="/farcaster.png" alt="" />
+                  <span>@wenaltszn.eth</span>
+                </a>
+
+                <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                  <img className="icon" src="/github.svg" alt="" />
+                  <span>GitHub</span>
+                </a>
+
+                <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+                  <span className="emoji">{themeIcon}</span>
+                  <span>{themeLabel}</span>
                 </button>
-              )}
-
-              <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                <img className="icon" src="/farcaster.png" alt="" />
-                <span>@wenaltszn.eth</span>
-              </a>
-
-              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
-                <img className="icon" src="/github.svg" alt="" />
-                <span>GitHub</span>
-              </a>
-
-              <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
-                <span className="emoji">{themeIcon}</span>
-                <span>{themeLabel}</span>
-              </button>
+              </div>
             </div>
           </header>
 
@@ -365,7 +371,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer links (order: X, Support CeloPG, Guild, Self, Discord) */}
+          {/* Footer links */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -449,8 +455,9 @@ export default function Home() {
         }
         .centerBadge img{ width:26px; height:26px; display:block; }
 
-        /* Actions pinned right */
-        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
+        /* Actions block */
+        .actions{ justify-self:end; display:flex; flex-direction:column; gap:8px; }
+        .actions-row{ display:flex; align-items:center; gap:10px; }
         .pill{
           display:inline-flex; align-items:center; gap:8px;
           height:36px; min-width:136px; padding:0 12px;
@@ -493,26 +500,30 @@ export default function Home() {
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; } /* fix discord squish */
+        .icon-link svg{ display:block; }
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* Mobile layout */
+        /* ===== Mobile tweaks (header only) ===== */
         @media (max-width:640px){
           .topbar{
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             grid-template-areas:
-              "brand actions"
-              "badge badge";
+              "brand"
+              "actions"
+              "badge";
             row-gap:8px;
           }
           .brand{ grid-area: brand; }
-          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .actions{ grid-area: actions; justify-self:end; width:100%; }
+          .actions-row.primary{ justify-content:flex-end; }
+          .actions-row.secondary{ justify-content:flex-end; flex-wrap:wrap; }
           .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
+
           h1{ font-size:22px; }
           .tagline{ font-size:12px; }
-          .pill{ min-width:auto; padding:0 10px; }
-          .wallet-cta{ min-width:auto; padding:0 12px; }
+          .pill{ min-width:auto; padding:0 10px; height:34px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; height:36px; }
         }
       `}</style>
     </>
