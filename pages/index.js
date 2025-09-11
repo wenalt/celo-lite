@@ -21,6 +21,9 @@ async function getEthereumProviderClass() {
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
 
+// Label pour l'indicateur L2 (date pivot)
+const CELO_L2_START_LABEL = "25 Mar 2025";
+
 function formatCELO(weiHex) {
   if (!weiHex) return "0";
   try {
@@ -41,16 +44,19 @@ export default function Home() {
 
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  // 👉 default to LIGHT when nothing saved
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
+
+  // --- NEW: compteur de transactions L1/L2 ---
+  const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState(null);
 
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
-    else setTheme("light");
   }, []);
 
   useEffect(() => {
@@ -183,6 +189,44 @@ export default function Home() {
     setAddress(null); setChainId(null); setBalance(null);
   }
 
+  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
+  useEffect(() => {
+    (async () => {
+      if (!address) { setTxCounts({ l1: null, l2: null }); return; }
+      try {
+        setTxError(null);
+        setTxLoading(true);
+
+        const key = `txcounts:${address}`;
+        const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+        if (cached) {
+          const { at, l1, l2 } = JSON.parse(cached);
+          if (Date.now() - at < 5 * 60 * 1000) {
+            setTxCounts({ l1, l2 });
+            setTxLoading(false);
+            return;
+          }
+        }
+
+        const res = await fetch(`/api/txcount?address=${address}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const l1 = data.l1 ?? 0;
+        const l2 = data.l2 ?? 0;
+        setTxCounts({ l1, l2 });
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem(key, JSON.stringify({ at: Date.now(), l1, l2 }));
+        }
+      } catch (e) {
+        console.error(e);
+        setTxError(e?.message || "Failed to load transactions");
+      } finally {
+        setTxLoading(false);
+      }
+    })();
+  }, [address]);
+
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
@@ -242,7 +286,6 @@ export default function Home() {
         <div className="wrap">
           {/* ======= HEADER ======= */}
           <header className="topbar">
-            {/* Left: brand */}
             <div className="brand">
               <img className="brand-logo" src="/icon.png" alt="Celo Lite" width="36" height="36" />
               <div className="brand-text">
@@ -251,42 +294,36 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Center: CeloPG badge */}
             <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
-            {/* Right: actions (split rows on mobile) */}
             <div className="actions">
-              <div className="actions-row primary">
-                {address ? (
-                  <div className="wallet-inline">
-                    <span className="addr">{short(address)}</span>
-                    <button className={BTN} onClick={disconnect}>Disconnect</button>
-                  </div>
-                ) : (
-                  <button className="wallet-cta" onClick={connect} title="Connect wallet">
-                    Connect Wallet
-                  </button>
-                )}
-              </div>
-
-              <div className="actions-row secondary">
-                <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
-                  <img className="icon" src="/farcaster.png" alt="" />
-                  <span>@wenaltszn.eth</span>
-                </a>
-
-                <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
-                  <img className="icon" src="/github.svg" alt="" />
-                  <span>GitHub</span>
-                </a>
-
-                <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
-                  <span className="emoji">{themeIcon}</span>
-                  <span>{themeLabel}</span>
+              {address ? (
+                <div className="wallet-inline">
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                </div>
+              ) : (
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                  Connect Wallet
                 </button>
-              </div>
+              )}
+
+              <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
+                <img className="icon" src="/farcaster.png" alt="" />
+                <span>@wenaltszn.eth</span>
+              </a>
+
+              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+                <img className="icon" src="/github.svg" alt="" />
+                <span>GitHub</span>
+              </a>
+
+              <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
+                <span className="emoji">{themeIcon}</span>
+                <span>{themeLabel}</span>
+              </button>
             </div>
           </header>
 
@@ -300,6 +337,17 @@ export default function Home() {
                   chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
                 <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
+
+                {/* --- NEW: affichage compteur L1/L2 --- */}
+                <p>
+                  {txLoading
+                    ? "transactions: …"
+                    : txCounts.l1 == null
+                      ? ""
+                      : `transactions: ${txCounts.l1} (L1) · ${txCounts.l2} (L2)`}
+                </p>
+                {txError ? <p className="warn">{txError}</p> : null}
+                <p className="hint">L2 counted since {CELO_L2_START_LABEL}.</p>
               </>
             ) : (
               <p>Connect to show status.</p>
@@ -402,7 +450,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -455,9 +503,8 @@ export default function Home() {
         }
         .centerBadge img{ width:26px; height:26px; display:block; }
 
-        /* Actions block */
-        .actions{ justify-self:end; display:flex; flex-direction:column; gap:8px; }
-        .actions-row{ display:flex; align-items:center; gap:10px; }
+        /* Actions pinned right */
+        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
         .pill{
           display:inline-flex; align-items:center; gap:8px;
           height:36px; min-width:136px; padding:0 12px;
@@ -500,30 +547,26 @@ export default function Home() {
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; }
+        .icon-link svg{ display:block; } /* fix discord squish */
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* ===== Mobile tweaks (header only) ===== */
+        /* Mobile layout */
         @media (max-width:640px){
           .topbar{
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
             grid-template-areas:
-              "brand"
-              "actions"
-              "badge";
+              "brand actions"
+              "badge badge";
             row-gap:8px;
           }
           .brand{ grid-area: brand; }
-          .actions{ grid-area: actions; justify-self:end; width:100%; }
-          .actions-row.primary{ justify-content:flex-end; }
-          .actions-row.secondary{ justify-content:flex-end; flex-wrap:wrap; }
+          .actions{ grid-area: actions; justify-self:end; gap:8px; }
           .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
-
           h1{ font-size:22px; }
           .tagline{ font-size:12px; }
-          .pill{ min-width:auto; padding:0 10px; height:34px; }
-          .wallet-cta{ min-width:auto; padding:0 12px; height:36px; }
+          .pill{ min-width:auto; padding:0 10px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; }
         }
       `}</style>
     </>
