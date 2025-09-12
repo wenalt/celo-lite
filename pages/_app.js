@@ -1,43 +1,30 @@
-// /pages/_app.js
-import { useEffect, useState } from "react";
+// pages/_app.js
+import { useState } from "react";
+import Head from "next/head";
+import { WagmiConfig, createConfig, http } from "wagmi";
+import { celo } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiConfig } from "wagmi";
-import { initAppKitClient } from "../lib/appkit";
 
-export default function MyApp({ Component, pageProps }) {
+const wagmiConfig = createConfig({
+  chains: [celo],
+  transports: {
+    [celo.id]: http("https://forno.celo.org"),
+  },
+  ssr: true,
+});
+
+export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [wagmiConfig, setWagmiConfig] = useState(null);
-
-  // Initialise AppKit + Wagmi côté client
-  useEffect(() => {
-    const cfg = initAppKitClient();
-    if (cfg) setWagmiConfig(cfg);
-  }, []);
-
-  // Tant que Wagmi/AppKit ne sont pas prêts côté client, on affiche un petit splash
-  if (!wagmiConfig) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "grid",
-            placeItems: "center",
-            fontFamily:
-              "Inter, ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
-          }}
-        >
-          <div style={{ opacity: 0.7 }}>Loading Celo Lite…</div>
-        </div>
-      </QueryClientProvider>
-    );
-  }
-
   return (
-    <WagmiConfig config={wagmiConfig}>
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <WagmiConfig config={wagmiConfig}>
+          <Component {...pageProps} />
+        </WagmiConfig>
       </QueryClientProvider>
-    </WagmiConfig>
+    </>
   );
 }
