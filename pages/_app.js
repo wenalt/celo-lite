@@ -1,77 +1,50 @@
 // pages/_app.js
-import Head from "next/head";
-import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
+import { WagmiConfig } from "wagmi";
 
-import { createAppKit } from "@reown/appkit";
+import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
-// ⚠️ IMPORTANT: AppKit attend des "networks" au format CAIP, pas des "chains" wagmi
-const CELO_NETWORK = {
-  id: "eip155:42220",       // CAIP-2 ID
-  chainId: 42220,
-  name: "Celo Mainnet",
-  currency: "CELO",
-  explorerUrl: "https://celoscan.io",
-  rpcUrl: "https://forno.celo.org"
-};
+// ✅ Réseaux AppKit (inclut Celo)
+import { celo } from "@reown/appkit/networks";
 
-const projectId =
-  process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
-  "138901e6be32b5e78b59aa262e517fd0";
+const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
+// Métadonnées pour WalletConnect/AppKit
 const metadata = {
   name: "Celo Lite",
   description: "Ecosystem · Staking · Governance",
-  url:
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://celo-lite.vercel.app",
-  icons: ["/icon.png"],
+  url: "https://celo-lite.vercel.app",
+  icons: ["https://celo-lite.vercel.app/icon.png"],
 };
 
-// ——— Instancie l’adapter Wagmi en lui passant des *networks* (pas chains)
+// ✅ Liste des réseaux supportés par l’app (CRUCIAL)
+const networks = [celo];
+
+// Adapter Wagmi pour AppKit (ssr: true pour Next.js pages/SSR)
 const wagmiAdapter = new WagmiAdapter({
   projectId,
-  networks: [CELO_NETWORK],
-  metadata,
-  ssr: true, // pour éviter les erreurs au prerender SSR
+  networks,   // <-- indispensable
+  ssr: true,
 });
 
-const wagmiConfig = wagmiAdapter.wagmiConfig;
+// Instancie AppKit une seule fois au chargement du module
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks,   // <-- indispensable
+  metadata,
+  // features: { email: false } // (optionnel)
+});
 
-// Sécurise l'initialisation d'AppKit côté client
-let appkitCreated = false;
-function initAppKitOnce() {
-  if (appkitCreated) return;
-  createAppKit({
-    projectId,
-    adapters: [wagmiAdapter],
-    themeMode: "light",
-    features: { email: false },
-  });
-  appkitCreated = true;
-}
+const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
-  const [queryClient] = useState(() => new QueryClient());
-
-  useEffect(() => {
-    if (typeof window !== "undefined") initAppKitOnce();
-  }, []);
-
   return (
-    <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-
-      <WagmiProvider config={wagmiConfig}>
-        <QueryClientProvider client={queryClient}>
-          <Component {...pageProps} />
-        </QueryClientProvider>
-      </WagmiProvider>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <WagmiConfig config={wagmiAdapter.wagmiConfig}>
+        <Component {...pageProps} />
+      </WagmiConfig>
+    </QueryClientProvider>
   );
 }
