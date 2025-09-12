@@ -7,27 +7,23 @@ import { WagmiConfig, createConfig, http } from "wagmi";
 import { celo } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// AppKit core + adapter
+// AppKit core + adapter (OK)
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import "@reown/appkit/styles.css";
-
-// ⬇️ The frame required for socials (Farcaster)
-const W3mFrame = dynamic(
-  () => import("@reown/appkit-react").then((m) => m.W3mFrame),
-  { ssr: false }
-);
+// 👉 imports React + styles depuis le sous-chemin
+import { W3mFrame } from "@reown/appkit/react";
+import "@reown/appkit/react/styles.css";
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
-// Your Wagmi config (same as before)
+// Wagmi de base
 const wagmiConfig = createConfig({
   chains: [celo],
   transports: { [celo.id]: http("https://forno.celo.org") },
   ssr: true,
 });
 
-// AppKit init (run once in browser)
+// Init AppKit une seule fois côté client
 if (typeof window !== "undefined" && !window.__APPKIT_CREATED__) {
   const metadata = {
     name: "Celo Lite",
@@ -36,14 +32,17 @@ if (typeof window !== "undefined" && !window.__APPKIT_CREATED__) {
     icons: ["/icon.png"],
   };
 
-  const adapters = [new WagmiAdapter({ wagmiConfig })];
+  const adapter = new WagmiAdapter({ wagmiConfig });
 
   createAppKit({
-    adapters,
+    adapters: [adapter],
     projectId,
     metadata,
-    // ⬇️ Enable Farcaster social login; remove if you don’t want it to show
-    features: { socials: ["farcaster"], email: false },
+    features: {
+      // Active le bouton social Farcaster (optionnel)
+      socials: ["farcaster"],
+      email: false,
+    },
   });
 
   window.__APPKIT_CREATED__ = true;
@@ -62,7 +61,7 @@ export default function App({ Component, pageProps }) {
           <Component {...pageProps} />
         </WagmiConfig>
 
-        {/* Required for Farcaster social/OAuth */}
+        {/* Requis pour le login Farcaster (sinon: “W3mFrame: iframe is not set”) */}
         <W3mFrame />
       </QueryClientProvider>
     </>
