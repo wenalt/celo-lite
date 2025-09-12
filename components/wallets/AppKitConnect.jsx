@@ -5,7 +5,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 
 export default function AppKitConnect({ className }) {
-  const { open } = useAppKit(); // open({ view: 'Connect' }) possible
+  const { open } = useAppKit();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
 
@@ -21,7 +21,7 @@ export default function AppKitConnect({ className }) {
   }
 
   return (
-    <button className="wallet-cta" onClick={() => open()}>
+    <button className="wallet-cta" onClick={() => open({ view: 'Connect' })}>
       Connect Wallet
     </button>
   );
