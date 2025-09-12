@@ -6,7 +6,16 @@ import { WagmiProvider } from "wagmi";
 
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { celo } from "viem/chains";
+
+// ⚠️ IMPORTANT: AppKit attend des "networks" au format CAIP, pas des "chains" wagmi
+const CELO_NETWORK = {
+  id: "eip155:42220",       // CAIP-2 ID
+  chainId: 42220,
+  name: "Celo Mainnet",
+  currency: "CELO",
+  explorerUrl: "https://celoscan.io",
+  rpcUrl: "https://forno.celo.org"
+};
 
 const projectId =
   process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
@@ -22,22 +31,23 @@ const metadata = {
   icons: ["/icon.png"],
 };
 
-// Build Wagmi adapter (works with SSR)
+// ——— Instancie l’adapter Wagmi en lui passant des *networks* (pas chains)
 const wagmiAdapter = new WagmiAdapter({
   projectId,
-  chains: [celo],
+  networks: [CELO_NETWORK],
   metadata,
-  ssr: true,
+  ssr: true, // pour éviter les erreurs au prerender SSR
 });
 
 const wagmiConfig = wagmiAdapter.wagmiConfig;
 
+// Sécurise l'initialisation d'AppKit côté client
 let appkitCreated = false;
 function initAppKitOnce() {
   if (appkitCreated) return;
   createAppKit({
     projectId,
-    adapters: [wagmiAdapter], // ✅ new API: pass adapters
+    adapters: [wagmiAdapter],
     themeMode: "light",
     features: { email: false },
   });
@@ -47,7 +57,6 @@ function initAppKitOnce() {
 export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient());
 
-  // Create AppKit on the client
   useEffect(() => {
     if (typeof window !== "undefined") initAppKitOnce();
   }, []);
