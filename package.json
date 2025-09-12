@@ -14,21 +14,15 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
 
-    "@walletconnect/ethereum-provider": "2.21.5",
-    "@walletconnect/modal": "2.7.0",
-
-    "@selfxyz/core": "*",
-    "@selfxyz/qrcode": "*",
-
-    "ethers": "*",
-    "@farcaster/miniapp-sdk": "latest",
-
     "@reown/appkit": "latest",
-    "@reown/appkit-react": "latest",
     "@reown/appkit-adapter-wagmi": "latest",
     "wagmi": "latest",
     "viem": "latest",
-    "@tanstack/react-query": "latest"
+    "@tanstack/react-query": "latest",
+
+    "@farcaster/miniapp-sdk": "latest",
+    "@selfxyz/core": "*",
+    "@selfxyz/qrcode": "*",
+    "ethers": "*"
   }
 }
-
