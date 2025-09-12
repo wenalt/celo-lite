@@ -3,62 +3,50 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
+import { useAccount, useBalance, useChainId, useDisconnect, useSwitchChain } from "wagmi";
+import { celo } from "viem/chains";
 
-const SelfVerificationDialog = dynamic(
-  () => import("../components/self/SelfVerificationDialog"),
-  { ssr: false }
-);
+// Self dialog (client-only)
+const SelfVerificationDialog = dynamic(() => import("../components/self/SelfVerificationDialog"), { ssr: false });
+// AppKit connect button (client-only)
+const AppKitConnect = dynamic(() => import("../components/wallets/AppKitConnect"), { ssr: false });
 
 const BTN = "btn";
 const CARD = "card";
-
-async function getEthereumProviderClass() {
-  if (typeof window === "undefined") return null;
-  const mod = await import("@walletconnect/ethereum-provider");
-  return mod.EthereumProvider;
-}
-
 const CELO_CHAIN_ID = 42220;
-const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
-
-// Label pour l'indicateur L2 (date pivot)
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
-function formatCELO(weiHex) {
-  if (!weiHex) return "0";
-  try {
-    const wei = BigInt(weiHex);
-    const whole = wei / 1000000000000000000n;
-    const frac = (wei % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4);
-    return `${whole}.${frac}`;
-  } catch {
-    return "0";
-  }
-}
-
 export default function Home() {
-  const [address, setAddress] = useState(null);
-  const [wcProvider, setWcProvider] = useState(null);
-  const [chainId, setChainId] = useState(null);
-  const [balance, setBalance] = useState(null);
+  // AppKit/Wagmi wallet state
+  const { address, status } = useAccount();
+  const chainId = useChainId();
+  const { disconnect } = useDisconnect();
+  const { switchChain, isPending: switching } = useSwitchChain();
 
-  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
+  const { data: balData, isLoading: balLoading } = useBalance({
+    address,
+    chainId: CELO_CHAIN_ID,
+    query: { enabled: !!address }
+  });
 
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // --- NEW: compteur de transactions L1/L2 ---
+  // L1/L2 tx counter
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
 
+  // Farcaster Mini App ready
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
+  // theme load
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
+  // open self from ?self=1
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -66,6 +54,7 @@ export default function Home() {
     }
   }, []);
 
+  // apply theme
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -79,117 +68,7 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  async function refreshStatus(p = wcProvider, addr = address) {
-    if (!p || !addr) return;
-    try {
-      const [cid, bal] = await Promise.all([
-        p.request({ method: "eth_chainId" }),
-        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
-      ]);
-      setChainId(cid);
-      setBalance(bal);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function ensureProvider() {
-    if (wcProvider) return wcProvider;
-
-    let EthereumProvider;
-    try {
-      EthereumProvider = await getEthereumProviderClass();
-      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
-    } catch (e) {
-      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
-      return null;
-    }
-
-    const provider = await EthereumProvider.init({
-      projectId,
-      showQrModal: true,
-      chains: [CELO_CHAIN_ID],
-      methods: [
-        "eth_sendTransaction",
-        "personal_sign",
-        "eth_signTypedData",
-        "wallet_switchEthereumChain",
-        "wallet_addEthereumChain",
-      ],
-      events: ["accountsChanged", "chainChanged", "disconnect"],
-      metadata: {
-        name: "Celo Lite",
-        description: "Ecosystem · Staking · Governance",
-        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
-        icons: ["/icon.png"],
-      },
-    });
-
-    provider.on("accountsChanged", (accs) => {
-      const a = accs?.[0] || null;
-      setAddress(a);
-      if (a) refreshStatus(provider, a);
-      else setBalance(null);
-    });
-
-    provider.on("chainChanged", (cid) => {
-      setChainId(cid);
-      if (address) refreshStatus(provider, address);
-    });
-
-    provider.on("disconnect", () => {
-      setAddress(null);
-      setChainId(null);
-      setBalance(null);
-    });
-
-    setWcProvider(provider);
-    return provider;
-  }
-
-  async function connect() {
-    const provider = await ensureProvider();
-    if (!provider) return;
-    try {
-      await provider.connect();
-      const addr = provider.accounts?.[0] || null;
-      setAddress(addr);
-
-      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
-      setChainId(currentCid);
-
-      if (currentCid !== CELO_HEX) {
-        try {
-          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CELO_HEX }] });
-          setChainId(CELO_HEX);
-        } catch {
-          try {
-            await provider.request({
-              method: "wallet_addEthereumChain",
-              params: [{
-                chainId: CELO_HEX,
-                chainName: "Celo Mainnet",
-                rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
-                nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-                blockExplorerUrls: ["https://celoscan.io/"],
-              }],
-            });
-            setChainId(CELO_HEX);
-          } catch {}
-        }
-      }
-      await refreshStatus(provider, addr);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function disconnect() {
-    try { await wcProvider?.disconnect(); } catch {}
-    setAddress(null); setChainId(null); setBalance(null);
-  }
-
-  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
+  // fetch L1/L2 counts when address changes (cache 5min)
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -230,6 +109,7 @@ export default function Home() {
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
+  const balanceStr = balLoading ? "…" : (balData ? `${Number(balData.formatted).toFixed(4)} ${balData.symbol}` : "…");
 
   return (
     <>
@@ -302,12 +182,11 @@ export default function Home() {
               {address ? (
                 <div className="wallet-inline">
                   <span className="addr">{short(address)}</span>
-                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                  <button className={BTN} onClick={() => disconnect()}>Disconnect</button>
                 </div>
               ) : (
-                <button className="wallet-cta" onClick={connect} title="Connect wallet">
-                  Connect Wallet
-                </button>
+                // Bouton AppKit (Rabby, Farcaster Wallet, WalletConnect…)
+                <AppKitConnect className="wallet-cta" />
               )}
 
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
@@ -333,12 +212,20 @@ export default function Home() {
             {address ? (
               <>
                 <p><b>{short(address)}</b></p>
-                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
-                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
+                <p className={chainId === CELO_CHAIN_ID ? "ok" : "warn"}>
+                  chain: {chainId ? `0x${chainId.toString(16)}` : "-"} {chainId === CELO_CHAIN_ID ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
-                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
 
-                {/* --- NEW: affichage compteur L1/L2 --- */}
+                {chainId !== CELO_CHAIN_ID && (
+                  <div className="btns" style={{ marginTop: 8 }}>
+                    <button className={BTN} onClick={() => switchChain({ chainId: CELO_CHAIN_ID })} disabled={switching}>
+                      {switching ? "Switching…" : "Switch to Celo"}
+                    </button>
+                  </div>
+                )}
+
+                <p>balance: {balanceStr}</p>
+
                 <p>
                   {txLoading
                     ? "transactions: …"
@@ -379,7 +266,7 @@ export default function Home() {
             <SelfVerificationDialog
               open={openSelf}
               onClose={() => setOpenSelf(false)}
-              userAddress={address}
+              userAddress={address || undefined}
             />
           )}
 
@@ -419,7 +306,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer links */}
+          {/* Footer */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -450,7 +337,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -480,62 +367,32 @@ export default function Home() {
         .page{ min-height:100vh; display:flex; align-items:center; }
         .wrap{ width:100%; max-width:900px; margin:0 auto; padding:22px 16px; }
 
-        /* ===== Header ===== */
-        .topbar{
-          display:grid;
-          grid-template-columns: auto 1fr auto; /* brand | center | actions */
-          align-items:center;
-          gap:16px;
-          margin-bottom:10px;
-        }
+        .topbar{ display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap:16px; margin-bottom:10px; }
         .brand{ display:flex; align-items:center; gap:10px; }
         .brand-logo{ border-radius:8px; display:block; }
         .brand-text{ line-height:1.1; }
         h1{ font-size:26px; font-weight:800; margin:0; }
         .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; font-weight:500; }
 
-        /* Centered badge */
-        .centerBadge{
-          justify-self:center;
-          display:flex; align-items:center; justify-content:center;
-          width:44px; height:44px; border-radius:12px;
-          background:var(--card); border:1px solid var(--ring);
-        }
+        .centerBadge{ justify-self:center; display:flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:var(--card); border:1px solid var(--ring); }
         .centerBadge img{ width:26px; height:26px; display:block; }
 
-        /* Actions pinned right */
         .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
-        .pill{
-          display:inline-flex; align-items:center; gap:8px;
-          height:36px; min-width:136px; padding:0 12px;
-          border-radius:10px; font-size:13px;
-          background:var(--card); border:1px solid var(--ring); color:inherit;
-        }
+        .pill{ display:inline-flex; align-items:center; gap:8px; height:36px; min-width:136px; padding:0 12px; border-radius:10px; font-size:13px; background:var(--card); border:1px solid var(--ring); color:inherit; }
         .pill .icon{ width:16px; height:16px; display:block; }
         .pill .emoji{ font-size:14px; }
 
-        /* Special, bigger white CTA */
-        .wallet-cta{
-          display:inline-flex; align-items:center; justify-content:center;
-          height:40px; min-width:172px; padding:0 16px;
-          border-radius:12px; font-weight:800; letter-spacing:.1px;
-          background:#fff; color:#0b0b0b; border:1px solid var(--ring);
-        }
+        .wallet-cta{ display:inline-flex; align-items:center; justify-content:center; height:40px; min-width:172px; padding:0 16px; border-radius:12px; font-weight:800; letter-spacing:.1px; background:#fff; color:#0b0b0b; border:1px solid var(--ring); }
 
         .wallet-inline{ display:flex; align-items:center; gap:8px; }
         .addr{ font-variant-numeric:tabular-nums; background:var(--card); border:1px solid var(--ring); padding:6px 10px; border-radius:10px; }
 
-        /* Cards */
         .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; margin-top:12px; text-align:center; }
         .card h2{ margin:0 0 8px; font-size:20px; }
         .card p{ margin:0 0 10px; color:var(--muted) }
         .btns{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 6px; justify-content:center; }
 
-        .btn{
-          appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg);
-          padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
-          text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
-        }
+        .btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg); padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
         .btn[disabled]{ opacity:.6; cursor:not-allowed }
         .btn:hover:not([disabled]){ opacity:.92 }
 
@@ -543,15 +400,13 @@ export default function Home() {
         .ok{ color: var(--muted) }
         .warn{ color:#b91c1c; font-weight:600 }
 
-        /* Footer */
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; } /* fix discord squish */
+        .icon-link svg{ display:block; }
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* Mobile layout */
         @media (max-width:640px){
           .topbar{
             grid-template-columns: 1fr 1fr;
