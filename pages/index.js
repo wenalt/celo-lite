@@ -4,17 +4,17 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
 
-// --- hooks (imports sûrs) ---
-import * as AnalyticsMod from "../utils/useAnalytics";
-import * as PreferredWalletMod from "../utils/usePreferredWallet";
+// hooks (your implementations)
+import { useAnalytics } from "../utils/useAnalytics";
+import { usePreferredWallet } from "../utils/usePreferredWallet";
 
-// Self dialog en client-only
+// Self dialog (client-only)
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
 );
 
-// Bouton / modal AppKit en client-only (évite l’erreur createAppKit/useAppKit au build)
+// AppKit connect button/modal (client-only)
 const AppKitConnect = dynamic(
   () => import("../components/wallets/AppKitConnect"),
   { ssr: false }
@@ -25,7 +25,7 @@ const CARD = "card";
 
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
-const L2_START_ISO = "2025-03-25T00:00:00Z"; // info
+const L2_START_ISO = "2025-03-25T00:00:00Z";
 
 function formatCELO(weiHex) {
   if (!weiHex) return "0";
@@ -40,21 +40,9 @@ function formatCELO(weiHex) {
 }
 
 export default function Home() {
-  // --------- wrappers sûrs pour les hooks perso ----------
-  const useAnalyticsSafe =
-    (AnalyticsMod && (AnalyticsMod.default || AnalyticsMod.useAnalytics)) ||
-    (() => ({ track: () => {} }));
-
-  const usePreferredWalletSafe =
-    (PreferredWalletMod && (PreferredWalletMod.default || PreferredWalletMod.usePreferredWallet)) ||
-    function usePreferredWalletFallback() {
-      const [w, setW] = useState(null);
-      return [w, setW];
-    };
-  // -------------------------------------------------------
-
-  const { track } = useAnalyticsSafe();
-  const [preferredWallet, setPreferredWallet] = usePreferredWalletSafe();
+  // your hooks
+  const { track } = useAnalytics();
+  const { getPreferredId /*, connectPreferred*/ } = usePreferredWallet();
 
   const [address, setAddress] = useState(null);
   const [chainId, setChainId] = useState(null);
@@ -72,7 +60,7 @@ export default function Home() {
     })();
   }, []);
 
-  // Hydrate thème
+  // hydrate theme
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
@@ -91,7 +79,7 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // Récup solde + tx counts quand l’adresse change
+  // fetch balance + tx counts when address changes
   useEffect(() => {
     if (!address) {
       setBalance(null);
@@ -100,7 +88,7 @@ export default function Home() {
       return;
     }
 
-    // Solde CELO
+    // CELO balance (RPC)
     (async () => {
       try {
         const res = await fetch("https://forno.celo.org", {
@@ -121,7 +109,7 @@ export default function Home() {
       }
     })();
 
-    // Tx count L1/L2 via /api/txcount
+    // tx counts via API route
     (async () => {
       try {
         const res = await fetch(`/api/txcount?address=${address}`);
@@ -146,17 +134,21 @@ export default function Home() {
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
-  // Callbacks AppKitConnect
+  // AppKit callbacks
   function handleConnected(info) {
     const addr = typeof info === "string" ? info : info?.address;
     const cid = typeof info === "object" ? info?.chainId : null;
-    const wallet = typeof info === "object" ? info?.wallet : undefined;
+    const walletId = typeof info === "object" ? info?.wallet : getPreferredId();
 
-    if (wallet) setPreferredWallet(wallet);
     setAddress(addr || null);
     setChainId(cid || null);
-    track("connect_success", { address: addr, wallet: wallet || preferredWallet || "unknown" });
+
+    track("connect_success", {
+      address: addr,
+      wallet: walletId || "unknown"
+    });
   }
+
   function handleDisconnected() {
     track("disconnect", { address });
     setAddress(null);
@@ -237,7 +229,7 @@ export default function Home() {
               <AppKitConnect
                 onConnected={handleConnected}
                 onDisconnected={handleDisconnected}
-                onOpen={() => track("connect_open", { walletHint: preferredWallet || null })}
+                onOpen={() => track("connect_open", { walletHint: getPreferredId() || null })}
               />
 
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
@@ -270,7 +262,9 @@ export default function Home() {
                 <p>
                   transactions: {l1Count ?? "…"} (L1) · {l2Count ?? "…"} (L2)
                   <br />
-                  <span style={{ opacity: 0.8, fontSize: 12 }}>L2 counted since 25 Mar 2025.</span>
+                  <span style={{ opacity: 0.8, fontSize: 12 }}>
+                    L2 counted since 25 Mar 2025.
+                  </span>
                 </p>
               </>
             ) : (
