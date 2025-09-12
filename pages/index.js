@@ -10,7 +10,6 @@ const SelfVerificationDialog = dynamic(
   { ssr: false }
 );
 
-// Bouton de connexion AppKit (client-only)
 const AppKitConnect = dynamic(
   () => import("../components/wallets/AppKitConnect"),
   { ssr: false }
@@ -23,7 +22,7 @@ const CELO_CHAIN_ID = 42220;               // L1
 const CELO_L2_START_LABEL = "25 Mar 2025"; // affichage info L2
 
 export default function Home() {
-  // --- Wagmi state ---
+  // Wagmi state
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { data: bal, isLoading: balLoading } = useBalance({
@@ -33,11 +32,11 @@ export default function Home() {
     enabled: Boolean(address),
   });
 
-  // --- UI state ---
+  // UI state
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // --- Compteur de transactions L1/L2 ---
+  // Compteur de transactions L1/L2
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
@@ -116,8 +115,9 @@ export default function Home() {
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
   const onCelo = chainId === CELO_CHAIN_ID;
 
-  // balance format simple
-  const balanceStr = balLoading ? "…" : (bal ? `${(bal.formatted || "").split(".")[0]}.${(bal.formatted || "").split(".")[1]?.slice(0,4) || "0"} ${bal.symbol || "CELO"}` : "…");
+  const balanceStr = balLoading
+    ? "…"
+    : (bal ? `${(bal.formatted || "").split(".")[0]}.${(bal.formatted || "").split(".")[1]?.slice(0,4) || "0"} ${bal.symbol || "CELO"}` : "…");
 
   return (
     <>
@@ -187,7 +187,6 @@ export default function Home() {
             </a>
 
             <div className="actions">
-              {/* AppKit connect / disconnect */}
               <AppKitConnect className="" />
 
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
@@ -299,11 +298,43 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer */}
+          {/* Footer links (restauré) */}
           <footer className="foot">
             <div className="social">
-              {/* ... (inchangé) ... */}
+              <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
+                </svg>
+                <span>@Celo</span>
+              </a>
+
+              <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
+                </svg>
+                <span className="label">Support CeloPG</span>
+              </a>
+
+              <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
+                <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
+                <span className="label">Celo's Communities Guild</span>
+              </a>
+
+              <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
+                </svg>
+                <span className="label">Self's support Telegram</span>
+              </a>
+
+              <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
+                <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                </svg>
+                <span className="label">Discord</span>
+              </a>
             </div>
+
             <p className="madeby">Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel</p>
           </footer>
         </div>
