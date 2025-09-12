@@ -1,14 +1,15 @@
 // components/wallets/AppKitConnect.jsx
 'use client';
 
-import { useAccount, useDisconnect } from 'wagmi'
-import { useAppKit } from '@reown/appkit/react'
+import { useAccount, useDisconnect } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
 
 export default function AppKitConnect({ className }) {
-  const { open } = useAppKit()
-  const { address, isConnected } = useAccount()
-  const { disconnect } = useDisconnect()
-  const short = a => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+  const { open } = useAppKit(); // open({ view: 'Connect' }) possible
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+
+  const short = a => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 
   if (isConnected) {
     return (
@@ -16,12 +17,12 @@ export default function AppKitConnect({ className }) {
         <span className="addr">{short(address)}</span>
         <button className="btn" onClick={() => disconnect()}>Disconnect</button>
       </div>
-    )
+    );
   }
 
   return (
     <button className="wallet-cta" onClick={() => open()}>
       Connect Wallet
     </button>
-  )
+  );
 }
