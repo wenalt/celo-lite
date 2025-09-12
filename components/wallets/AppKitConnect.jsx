@@ -1,7 +1,28 @@
 // components/wallets/AppKitConnect.jsx
-import { AppKitButton } from "@reown/appkit-react";
+'use client';
+
+import { useAccount, useDisconnect } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
 
 export default function AppKitConnect({ className }) {
-  // Le bouton ouvre le modal (Rabby, Farcaster Wallet, WC, etc.)
-  return <AppKitButton className={className} label="Connect Wallet" />;
+  const { open } = useAppKit(); // open({ view: 'Connect' }) possible
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+
+  const short = a => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
+
+  if (isConnected) {
+    return (
+      <div className={className} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span className="addr">{short(address)}</span>
+        <button className="btn" onClick={() => disconnect()}>Disconnect</button>
+      </div>
+    );
+  }
+
+  return (
+    <button className="wallet-cta" onClick={() => open()}>
+      Connect Wallet
+    </button>
+  );
 }
