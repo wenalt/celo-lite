@@ -1,0 +1,6 @@
+"@reown/appkit": "latest",
+"@reown/appkit-react": "latest",
+"@reown/appkit-adapter-wagmi": "latest",
+"wagmi": "latest",
+"viem": "latest",
+"@tanstack/react-query": "latest"
