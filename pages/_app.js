@@ -9,9 +9,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-// ⚠️ NE PAS importer de CSS AppKit ici (chemins variables selon versions)
+// ⚠️ Ne pas importer de CSS AppKit ici (les chemins varient selon versions)
 
-// Charge W3mFrame uniquement côté client (évite le crash SSR /500)
+// Charge W3mFrame uniquement côté client (évite le crash SSR)
 const W3mFrameNoSSR = dynamic(
   () => import("@reown/appkit/react").then((m) => m.W3mFrame),
   { ssr: false }
@@ -19,18 +19,28 @@ const W3mFrameNoSSR = dynamic(
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
-// wagmi (Celo uniquement) — SSR friendly
+// wagmi: Celo mainnet (SSR-friendly)
 const wagmiConfig = createConfig({
   chains: [celo],
   transports: { [celo.id]: http("https://forno.celo.org") },
   ssr: true,
 });
 
+// Réseau CAIP explicite pour AppKit (clé du fix)
+const CELO_CAIP = {
+  id: "eip155:42220",
+  chainId: 42220,
+  name: "Celo",
+  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+  rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
+  explorerUrls: ["https://celoscan.io/"],
+  testnet: false,
+};
+
 export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient());
   const appkitInitRef = useRef(false);
 
-  // Initialise AppKit seulement côté client, une seule fois
   useEffect(() => {
     if (appkitInitRef.current) return;
     if (typeof window === "undefined") return;
@@ -42,13 +52,18 @@ export default function App({ Component, pageProps }) {
       icons: ["/icon.png"],
     };
 
-    const adapter = new WagmiAdapter({ wagmiConfig });
+    // 👉 Fournit networks au WagmiAdapter (sinon undefined → .map crash)
+    const adapter = new WagmiAdapter({
+      wagmiConfig,
+      networks: [CELO_CAIP],
+    });
 
     createAppKit({
       adapters: [adapter],
       projectId,
       metadata,
-      features: { socials: ["farcaster"] }, // Farcaster Wallet activé
+      networks: [CELO_CAIP], // utile pour l’UI d’AppKit
+      features: { socials: ["farcaster"] }, // Farcaster Wallet
     });
 
     appkitInitRef.current = true;
@@ -65,7 +80,7 @@ export default function App({ Component, pageProps }) {
           <Component {...pageProps} />
         </WagmiConfig>
 
-        {/* Requis pour Farcaster Wallet, mais seulement côté client */}
+        {/* Requis pour Farcaster Wallet, uniquement côté client */}
         <W3mFrameNoSSR />
       </QueryClientProvider>
     </>
