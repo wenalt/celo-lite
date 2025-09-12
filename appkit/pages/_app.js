@@ -1,49 +1,30 @@
 // pages/_app.js
-import React from "react";
-import { WagmiProvider, createConfig, http } from "wagmi";
-import { walletConnect } from "wagmi/connectors";
+import { useState } from "react";
+import Head from "next/head";
+import { WagmiConfig, createConfig, http } from "wagmi";
+import { celo } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const celo = {
-  id: 42220,
-  name: "Celo",
-  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-  rpcUrls: {
-    default: { http: ["https://forno.celo.org"] },
-    public: { http: ["https://forno.celo.org"] },
-  },
-  blockExplorers: { default: { name: "CeloScan", url: "https://celoscan.io" } },
-};
-
-const wcProjectId =
-  process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
-  "138901e6be32b5e78b59aa262e517fd0";
 
 const wagmiConfig = createConfig({
   chains: [celo],
-  transports: { [celo.id]: http("https://forno.celo.org") },
-  connectors: [
-    walletConnect({
-      projectId: wcProjectId,
-      showQrModal: true,
-      metadata: {
-        name: "Celo Lite",
-        description: "Ecosystem · Staking · Governance",
-        url: "https://celo-lite.vercel.app",
-        icons: ["https://celo-lite.vercel.app/icon.png"],
-      },
-    }),
-  ],
+  transports: {
+    [celo.id]: http("https://forno.celo.org"),
+  },
+  ssr: true,
 });
 
-const queryClient = new QueryClient();
-
 export default function App({ Component, pageProps }) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <WagmiConfig config={wagmiConfig}>
+          <Component {...pageProps} />
+        </WagmiConfig>
       </QueryClientProvider>
-    </WagmiProvider>
+    </>
   );
 }
