@@ -4,15 +4,6 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
 
-// ─────────────────────────────────────────────────────────────
-// ✅ Reown AppKit + wagmi/viem (EIP-6963 & Farcaster Wallet)
-// ─────────────────────────────────────────────────────────────
-import { createAppKit } from "@reown/appkit";
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { WagmiConfig, useAccount, useBalance, useChainId, useDisconnect } from "wagmi";
-import { http } from "viem";
-
-// Self dialog (client-only)
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
@@ -21,83 +12,53 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
-// CELO chain config for viem/wagmi
-const CELO_CHAIN_ID = 42220;
-const celoChain = {
-  id: CELO_CHAIN_ID,
-  name: "Celo",
-  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-  rpcUrls: {
-    default: { http: ["https://forno.celo.org"] },
-    public: { http: ["https://forno.celo.org"] },
-  },
-  blockExplorers: {
-    default: { name: "Celoscan", url: "https://celoscan.io" },
-  },
-};
-
-// WalletConnect / AppKit projectId
-const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
-
-// Wagmi adapter (transports + networks)
-const wagmiAdapter = new WagmiAdapter({
-  projectId: WC_PROJECT_ID,
-  networks: [celoChain],
-  transports: {
-    [celoChain.id]: http("https://forno.celo.org"),
-  },
-  ssr: true,
-});
-
-// Single AppKit instance (EIP-6963 + WC + Farcaster Wallet)
-export const appKit = createAppKit({
-  adapters: [wagmiAdapter],
-  projectId: WC_PROJECT_ID,
-  networks: [celoChain],
-  metadata: {
-    name: "Celo Lite",
-    description: "Ecosystem · Staking · Governance",
-    url: "https://celo-lite.vercel.app",
-    icons: ["https://celo-lite.vercel.app/icon.png"],
-  },
-  // (optionnel) tu peux ajuster l'apparence plus tard
-  features: {
-    email: false, // pas d'email login
-  },
-});
-
-// Utilitaires
-const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
-
-function shortAddr(a) {
-  return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "";
+async function getEthereumProviderClass() {
+  if (typeof window === "undefined") return null;
+  const mod = await import("@walletconnect/ethereum-provider");
+  return mod.EthereumProvider;
 }
 
-function AppInner() {
+const CELO_CHAIN_ID = 42220;
+const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
+
+// Label pour l'indicateur L2 (date pivot)
+const CELO_L2_START_LABEL = "25 Mar 2025";
+
+function formatCELO(weiHex) {
+  if (!weiHex) return "0";
+  try {
+    const wei = BigInt(weiHex);
+    const whole = wei / 1000000000000000000n;
+    const frac = (wei % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4);
+    return `${whole}.${frac}`;
+  } catch {
+    return "0";
+  }
+}
+
+export default function Home() {
+  const [address, setAddress] = useState(null);
+  const [wcProvider, setWcProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [balance, setBalance] = useState(null);
+
+  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
+
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // wagmi state (address, chain, disconnect)
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { disconnect } = useDisconnect();
-  const { data: balanceData, isLoading: balanceLoading } = useBalance({
-    address,
-    chainId: CELO_CHAIN_ID,
-    unit: "ether",
-    query: { enabled: !!address },
-  });
+  // --- NEW: compteur de transactions L1/L2 ---
+  const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState(null);
 
-  // Farcaster mini app ready
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
-  // theme: load saved
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
-  // open Self modal via ?self=1
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -105,7 +66,6 @@ function AppInner() {
     }
   }, []);
 
-  // apply theme
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -119,15 +79,155 @@ function AppInner() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  function connect() {
-    // ouvre le modal AppKit (WalletConnect + Injected EIP-6963 + Farcaster Wallet)
-    appKit.open();
+  async function refreshStatus(p = wcProvider, addr = address) {
+    if (!p || !addr) return;
+    try {
+      const [cid, bal] = await Promise.all([
+        p.request({ method: "eth_chainId" }),
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
+      ]);
+      setChainId(cid);
+      setBalance(bal);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function onDisconnect() {
-    try { disconnect(); } catch {}
+  async function ensureProvider() {
+    if (wcProvider) return wcProvider;
+
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
+    } catch (e) {
+      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
+      return null;
+    }
+
+    const provider = await EthereumProvider.init({
+      projectId,
+      showQrModal: true,
+      chains: [CELO_CHAIN_ID],
+      methods: [
+        "eth_sendTransaction",
+        "personal_sign",
+        "eth_signTypedData",
+        "wallet_switchEthereumChain",
+        "wallet_addEthereumChain",
+      ],
+      events: ["accountsChanged", "chainChanged", "disconnect"],
+      metadata: {
+        name: "Celo Lite",
+        description: "Ecosystem · Staking · Governance",
+        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
+        icons: ["/icon.png"],
+      },
+    });
+
+    provider.on("accountsChanged", (accs) => {
+      const a = accs?.[0] || null;
+      setAddress(a);
+      if (a) refreshStatus(provider, a);
+      else setBalance(null);
+    });
+
+    provider.on("chainChanged", (cid) => {
+      setChainId(cid);
+      if (address) refreshStatus(provider, address);
+    });
+
+    provider.on("disconnect", () => {
+      setAddress(null);
+      setChainId(null);
+      setBalance(null);
+    });
+
+    setWcProvider(provider);
+    return provider;
   }
 
+  async function connect() {
+    const provider = await ensureProvider();
+    if (!provider) return;
+    try {
+      await provider.connect();
+      const addr = provider.accounts?.[0] || null;
+      setAddress(addr);
+
+      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
+      setChainId(currentCid);
+
+      if (currentCid !== CELO_HEX) {
+        try {
+          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CELO_HEX }] });
+          setChainId(CELO_HEX);
+        } catch {
+          try {
+            await provider.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: CELO_HEX,
+                chainName: "Celo Mainnet",
+                rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
+                nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+                blockExplorerUrls: ["https://celoscan.io/"],
+              }],
+            });
+            setChainId(CELO_HEX);
+          } catch {}
+        }
+      }
+      await refreshStatus(provider, addr);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function disconnect() {
+    try { await wcProvider?.disconnect(); } catch {}
+    setAddress(null); setChainId(null); setBalance(null);
+  }
+
+  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
+  useEffect(() => {
+    (async () => {
+      if (!address) { setTxCounts({ l1: null, l2: null }); return; }
+      try {
+        setTxError(null);
+        setTxLoading(true);
+
+        const key = `txcounts:${address}`;
+        const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+        if (cached) {
+          const { at, l1, l2 } = JSON.parse(cached);
+          if (Date.now() - at < 5 * 60 * 1000) {
+            setTxCounts({ l1, l2 });
+            setTxLoading(false);
+            return;
+          }
+        }
+
+        const res = await fetch(`/api/txcount?address=${address}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const l1 = data.l1 ?? 0;
+        const l2 = data.l2 ?? 0;
+        setTxCounts({ l1, l2 });
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem(key, JSON.stringify({ at: Date.now(), l1, l2 }));
+        }
+      } catch (e) {
+        console.error(e);
+        setTxError(e?.message || "Failed to load transactions");
+      } finally {
+        setTxLoading(false);
+      }
+    })();
+  }, [address]);
+
+  const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
@@ -177,7 +277,6 @@ function AppInner() {
           })}
         />
 
-        {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -185,9 +284,8 @@ function AppInner() {
 
       <main className="page">
         <div className="wrap">
-          {/* ======= HEADER (conserve ta mise en page actuelle) ======= */}
+          {/* ======= HEADER ======= */}
           <header className="topbar">
-            {/* Left: brand */}
             <div className="brand">
               <img className="brand-logo" src="/icon.png" alt="Celo Lite" width="36" height="36" />
               <div className="brand-text">
@@ -196,17 +294,15 @@ function AppInner() {
               </div>
             </div>
 
-            {/* Center: CeloPG */}
             <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
-            {/* Right: actions */}
             <div className="actions">
-              {isConnected ? (
+              {address ? (
                 <div className="wallet-inline">
-                  <span className="addr">{shortAddr(address)}</span>
-                  <button className={BTN} onClick={onDisconnect}>Disconnect</button>
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
                 </div>
               ) : (
                 <button className="wallet-cta" onClick={connect} title="Connect wallet">
@@ -234,15 +330,24 @@ function AppInner() {
           {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
-            {isConnected ? (
+            {address ? (
               <>
-                <p><b>{shortAddr(address)}</b></p>
-                <p className={chainId === CELO_CHAIN_ID ? "ok" : "warn"}>
-                  chain: {chainId ? `0x${Number(chainId).toString(16)}` : "-"} {chainId === CELO_CHAIN_ID ? "(celo)" : "(switch to Celo to stake/vote)"}
+                <p><b>{short(address)}</b></p>
+                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
+                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
+
+                {/* --- NEW: affichage compteur L1/L2 --- */}
                 <p>
-                  balance: {balanceLoading ? "…" : (balanceData ? `${Number(balanceData.formatted).toFixed(4)} CELO` : "0")}
+                  {txLoading
+                    ? "transactions: …"
+                    : txCounts.l1 == null
+                      ? ""
+                      : `transactions: ${txCounts.l1} (L1) · ${txCounts.l2} (L2)`}
                 </p>
+                {txError ? <p className="warn">{txError}</p> : null}
+                <p className="hint">L2 counted since {CELO_L2_START_LABEL}.</p>
               </>
             ) : (
               <p>Connect to show status.</p>
@@ -314,7 +419,7 @@ function AppInner() {
             </div>
           </section>
 
-          {/* Footer links (order: X, Support CeloPG, Guild, Self, Discord) */}
+          {/* Footer links */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -345,7 +450,7 @@ function AppInner() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -442,7 +547,7 @@ function AppInner() {
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; }
+        .icon-link svg{ display:block; } /* fix discord squish */
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
@@ -465,13 +570,5 @@ function AppInner() {
         }
       `}</style>
     </>
-  );
-}
-
-export default function Home() {
-  return (
-    <WagmiConfig config={wagmiAdapter.wagmiConfig}>
-      <AppInner />
-    </WagmiConfig>
   );
 }
