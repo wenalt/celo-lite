@@ -9,28 +9,26 @@ export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient())
   const [wagmi, setWagmi] = useState(null)
 
-  // Init AppKit UNIQUEMENT côté client, puis récupère l’adapter
+  // Init AppKit only on client; render after wagmi is ready
   useEffect(() => {
-    const adapter = ensureAppKit()
-    setWagmi(adapter)
-
-    // Sécurité: si jamais quelque chose retarde l’init, on retente 1x
-    if (!adapter) {
-      const t = setTimeout(() => {
-        const again = ensureAppKit()
-        setWagmi(again)
-      }, 200)
-      return () => clearTimeout(t)
+    try {
+      const adapter = ensureAppKit()
+      setWagmi(adapter)
+      if (!adapter) {
+        // rare: retry once if first call ran before window initialized
+        const t = setTimeout(() => setWagmi(ensureAppKit()), 150)
+        return () => clearTimeout(t)
+      }
+    } catch (e) {
+      console.error('AppKit init error:', e)
     }
   }, [])
 
-  // Tant que wagmiConfig pas prêt, on évite de rendre des hooks wagmi
   if (!wagmi?.wagmiConfig) {
+    // Avoid rendering wagmi hooks until config is ready
     return (
       <>
-        <Head>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-        </Head>
+        <Head><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
         <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />
       </>
     )
@@ -38,10 +36,7 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-
+      <Head><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
       <QueryClientProvider client={queryClient}>
         <WagmiProvider config={wagmi.wagmiConfig}>
           <Component {...pageProps} />
