@@ -18,6 +18,7 @@
     "@walletconnect/modal": "2.7.0",
     
     "@reown/appkit": "latest",
+    "@reown/appkit-react": "latest",
     "@reown/appkit-adapter-wagmi": "latest",
     "wagmi": "latest",
     "viem": "latest",
