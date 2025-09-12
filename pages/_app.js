@@ -9,7 +9,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { W3mFrame } from "@reown/appkit/react";
-import "@reown/appkit-react/styles.css"; // ✅ chemin CSS correct
+// ❌ SUPPRIMÉ car non exporté par ta version :
+// import "@reown/appkit-react/styles.css";
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
@@ -28,14 +29,14 @@ if (typeof window !== "undefined" && !window.__APPKIT_CREATED__) {
     url: "https://celo-lite.vercel.app",
     icons: ["/icon.png"],
   };
+
   const adapter = new WagmiAdapter({ wagmiConfig });
 
   createAppKit({
     adapters: [adapter],
     projectId,
     metadata,
-    // Active Farcaster Wallet & co
-    features: { socials: ["farcaster"] },
+    features: { socials: ["farcaster"] }, // ✅ Farcaster Wallet activé
   });
 
   window.__APPKIT_CREATED__ = true;
