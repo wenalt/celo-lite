@@ -1,6 +1,7 @@
 // pages/_app.js
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
+import dynamic from "next/dynamic";
 
 import { WagmiConfig, createConfig, http } from "wagmi";
 import { celo } from "viem/chains";
@@ -8,42 +9,50 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { W3mFrame } from "@reown/appkit/react";
-// ❌ SUPPRIMÉ car non exporté par ta version :
-// import "@reown/appkit-react/styles.css";
+// ⚠️ NE PAS importer de CSS AppKit ici (chemins variables selon versions)
+
+// Charge W3mFrame uniquement côté client (évite le crash SSR /500)
+const W3mFrameNoSSR = dynamic(
+  () => import("@reown/appkit/react").then((m) => m.W3mFrame),
+  { ssr: false }
+);
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
-// wagmi (Celo uniquement)
+// wagmi (Celo uniquement) — SSR friendly
 const wagmiConfig = createConfig({
   chains: [celo],
   transports: { [celo.id]: http("https://forno.celo.org") },
   ssr: true,
 });
 
-// Initialisation AppKit côté client (une seule fois)
-if (typeof window !== "undefined" && !window.__APPKIT_CREATED__) {
-  const metadata = {
-    name: "Celo Lite",
-    description: "Ecosystem · Staking · Governance",
-    url: "https://celo-lite.vercel.app",
-    icons: ["/icon.png"],
-  };
-
-  const adapter = new WagmiAdapter({ wagmiConfig });
-
-  createAppKit({
-    adapters: [adapter],
-    projectId,
-    metadata,
-    features: { socials: ["farcaster"] }, // ✅ Farcaster Wallet activé
-  });
-
-  window.__APPKIT_CREATED__ = true;
-}
-
 export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient());
+  const appkitInitRef = useRef(false);
+
+  // Initialise AppKit seulement côté client, une seule fois
+  useEffect(() => {
+    if (appkitInitRef.current) return;
+    if (typeof window === "undefined") return;
+
+    const metadata = {
+      name: "Celo Lite",
+      description: "Ecosystem · Staking · Governance",
+      url: "https://celo-lite.vercel.app",
+      icons: ["/icon.png"],
+    };
+
+    const adapter = new WagmiAdapter({ wagmiConfig });
+
+    createAppKit({
+      adapters: [adapter],
+      projectId,
+      metadata,
+      features: { socials: ["farcaster"] }, // Farcaster Wallet activé
+    });
+
+    appkitInitRef.current = true;
+  }, []);
 
   return (
     <>
@@ -55,8 +64,9 @@ export default function App({ Component, pageProps }) {
         <WagmiConfig config={wagmiConfig}>
           <Component {...pageProps} />
         </WagmiConfig>
-        {/* requis pour Farcaster Wallet (Web3Modal Frame) */}
-        <W3mFrame />
+
+        {/* Requis pour Farcaster Wallet, mais seulement côté client */}
+        <W3mFrameNoSSR />
       </QueryClientProvider>
     </>
   );
