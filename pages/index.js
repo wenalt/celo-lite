@@ -1,12 +1,12 @@
 // pages/index.js
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount, useChainId, useBalance } from "wagmi";
 import AppKitConnect from "../components/wallets/AppKitConnect";
 
-// Self dialog en client-only
+// charge le dialog Self en client-only
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
@@ -21,58 +21,50 @@ const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
 // Label pour l'indicateur L2 (date pivot)
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
-// formateur CELO pour fallback
-function formatCELOFromBigInt(wei) {
-  try {
-    const WAD = 1000000000000000000n;
-    const whole = wei / WAD;
-    const frac = (wei % WAD).toString().padStart(18, "0").slice(0, 4);
-    return `${whole}.${frac}`;
-  } catch {
-    return "0";
-  }
+function formatCELOFromWagmi(balanceData) {
+  // wagmi useBalance fournit .formatted déjà en unités CELO
+  if (!balanceData || !balanceData.formatted) return "0";
+  // garde 4 décimales max pour stabilité visuelle
+  const [w, f = ""] = String(balanceData.formatted).split(".");
+  return f ? `${w}.${f.slice(0, 4)}` : w;
 }
 
 export default function Home() {
-  // ---- wagmi / AppKit state ----
+  // ---- Wagmi (AppKit) wallet state ----
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
+  const { data: balanceData } = useBalance({ address, query: { enabled: !!address } });
 
-  const {
-    data: balData,
-    isLoading: balLoading,
-    refetch: refetchBal,
-  } = useBalance({
-    address,
-    chainId: CELO_CHAIN_ID,
-    enabled: !!address, // fetch seulement si connecté
-    watch: true,
-  });
-
-  // ---- UI state ----
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // --- NEW: compteur de transactions L1/L2 ---
+  // --- Compteur de transactions L1/L2 ---
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
 
-  // Mini-app ready (no-op si pas dans Farcaster)
+  // Mini App: signal "ready"
   useEffect(() => {
     (async () => {
       try { await sdk.actions.ready(); } catch {}
     })();
   }, []);
 
-  // Load theme
+  // thème: boot depuis localStorage
   useEffect(() => {
-    const saved =
-      typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
+    const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
-  // Applique theme → html[data-theme]
+  // auto-open Self si ?self=1
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("self") === "1") setOpenSelf(true);
+    }
+  }, []);
+
+  // applique thème
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -86,7 +78,7 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // --- Charge le compteur L1/L2 quand l’adresse change (cache 5 min) ---
+  // --- charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -95,8 +87,7 @@ export default function Home() {
         setTxLoading(true);
 
         const key = `txcounts:${address}`;
-        const cached =
-          typeof window !== "undefined" ? localStorage.getItem(key) : null;
+        const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
         if (cached) {
           const { at, l1, l2 } = JSON.parse(cached);
           if (Date.now() - at < 5 * 60 * 1000) {
@@ -125,24 +116,9 @@ export default function Home() {
     })();
   }, [address]);
 
-  // helpers
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
-
-  // balance formatée (wagmi donne déjà .formatted)
-  const balanceText = useMemo(() => {
-    if (!address) return null;
-    if (balLoading) return "…";
-    if (balData?.formatted) {
-      // limiter à 4 décimales
-      const n = Number(balData.formatted);
-      if (!Number.isNaN(n)) return `${n.toFixed(4)} CELO`;
-    }
-    // fallback si pas de formatted
-    if (balData?.value) return `${formatCELOFromBigInt(balData.value)} CELO`;
-    return "0 CELO";
-  }, [address, balLoading, balData]);
 
   return (
     <>
@@ -193,10 +169,7 @@ export default function Home() {
         {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="page">
@@ -216,7 +189,7 @@ export default function Home() {
             </a>
 
             <div className="actions">
-              {/* Connect / Disconnect géré par AppKit */}
+              {/* Connect / Disconnect via AppKit modal */}
               <AppKitConnect />
 
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
@@ -239,17 +212,16 @@ export default function Home() {
           {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
-
             {isConnected ? (
               <>
                 <p><b>{short(address)}</b></p>
                 <p className={chainId === CELO_CHAIN_ID ? "ok" : "warn"}>
-                  chain: {chainId ? `0x${Number(chainId).toString(16)}` : "-"}{" "}
+                  chain: {chainId ? `0x${chainId.toString(16)}` : "-"}{" "}
                   {chainId === CELO_CHAIN_ID ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
-                <p>balance: {balanceText}</p>
+                <p>balance: {balanceData ? `${formatCELOFromWagmi(balanceData)} CELO` : "…"}</p>
 
-                {/* --- compteur L1/L2 --- */}
+                {/* Compteur L1/L2 */}
                 <p>
                   {txLoading
                     ? "transactions: …"
@@ -290,7 +262,7 @@ export default function Home() {
             <SelfVerificationDialog
               open={openSelf}
               onClose={() => setOpenSelf(false)}
-              userAddress={address || undefined}
+              userAddress={address}
             />
           )}
 
@@ -330,7 +302,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer links */}
+          {/* Footer links (ordre: X, Support CeloPG, Guild, Self, Discord) */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -361,7 +333,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -425,7 +397,7 @@ export default function Home() {
         .pill .icon{ width:16px; height:16px; display:block; }
         .pill .emoji{ font-size:14px; }
 
-        /* Special, bigger white CTA (AppKitConnect garde ces classes) */
+        /* Special, bigger white CTA (used inside AppKitConnect) */
         .wallet-cta{
           display:inline-flex; align-items:center; justify-content:center;
           height:40px; min-width:172px; padding:0 16px;
