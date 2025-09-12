@@ -129,7 +129,7 @@ function AppInner() {
   }
 
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
-  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙`;
+  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
     <>
