@@ -4,7 +4,6 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { walletConnect } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Minimal Celo chain (viem-style)
 const celo = {
   id: 42220,
   name: "Celo",
@@ -13,21 +12,16 @@ const celo = {
     default: { http: ["https://forno.celo.org"] },
     public: { http: ["https://forno.celo.org"] },
   },
-  blockExplorers: {
-    default: { name: "CeloScan", url: "https://celoscan.io" },
-  },
+  blockExplorers: { default: { name: "CeloScan", url: "https://celoscan.io" } },
 };
 
 const wcProjectId =
   process.env.NEXT_PUBLIC_WC_PROJECT_ID ||
-  "138901e6be32b5e78b59aa262e517fd0"; // your existing PID
+  "138901e6be32b5e78b59aa262e517fd0";
 
-// Wagmi config (OK even if you still use your custom WC flow elsewhere)
 const wagmiConfig = createConfig({
   chains: [celo],
-  transports: {
-    [celo.id]: http("https://forno.celo.org"),
-  },
+  transports: { [celo.id]: http("https://forno.celo.org") },
   connectors: [
     walletConnect({
       projectId: wcProjectId,
@@ -42,7 +36,6 @@ const wagmiConfig = createConfig({
   ],
 });
 
-// One QueryClient for the app
 const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
