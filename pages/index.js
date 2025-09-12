@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
 
-// hooks perso
-import { useAnalytics } from "../utils/useAnalytics";
-import usePreferredWallet from "../utils/usePreferredWallet";
+// --- hooks (imports sûrs) ---
+import * as AnalyticsMod from "../utils/useAnalytics";
+import * as PreferredWalletMod from "../utils/usePreferredWallet";
 
 // Self dialog en client-only
 const SelfVerificationDialog = dynamic(
@@ -14,7 +14,7 @@ const SelfVerificationDialog = dynamic(
   { ssr: false }
 );
 
-// Bouton / modal AppKit en client-only (évite l’erreur useAppKit côté SSR)
+// Bouton / modal AppKit en client-only (évite l’erreur createAppKit/useAppKit au build)
 const AppKitConnect = dynamic(
   () => import("../components/wallets/AppKitConnect"),
   { ssr: false }
@@ -25,9 +25,7 @@ const CARD = "card";
 
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
-
-// date pivot pour L2 (25 mars 2025)
-const L2_START_ISO = "2025-03-25T00:00:00Z";
+const L2_START_ISO = "2025-03-25T00:00:00Z"; // info
 
 function formatCELO(weiHex) {
   if (!weiHex) return "0";
@@ -42,8 +40,21 @@ function formatCELO(weiHex) {
 }
 
 export default function Home() {
-  const { track } = useAnalytics();
-  const [preferredWallet, setPreferredWallet] = usePreferredWallet();
+  // --------- wrappers sûrs pour les hooks perso ----------
+  const useAnalyticsSafe =
+    (AnalyticsMod && (AnalyticsMod.default || AnalyticsMod.useAnalytics)) ||
+    (() => ({ track: () => {} }));
+
+  const usePreferredWalletSafe =
+    (PreferredWalletMod && (PreferredWalletMod.default || PreferredWalletMod.usePreferredWallet)) ||
+    function usePreferredWalletFallback() {
+      const [w, setW] = useState(null);
+      return [w, setW];
+    };
+  // -------------------------------------------------------
+
+  const { track } = useAnalyticsSafe();
+  const [preferredWallet, setPreferredWallet] = usePreferredWalletSafe();
 
   const [address, setAddress] = useState(null);
   const [chainId, setChainId] = useState(null);
@@ -54,22 +65,19 @@ export default function Home() {
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // Mini-app Farcaster ready
+  // Farcaster Mini App ready
   useEffect(() => {
     (async () => {
-      try {
-        await sdk.actions.ready();
-      } catch {}
+      try { await sdk.actions.ready(); } catch {}
     })();
   }, []);
 
-  // Theme: hydrate depuis localStorage
+  // Hydrate thème
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
-  // Appliquer le thème sur <html>
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -83,7 +91,7 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // Quand une adresse est connectée : récupérer solde + tx counts
+  // Récup solde + tx counts quand l’adresse change
   useEffect(() => {
     if (!address) {
       setBalance(null);
@@ -92,7 +100,7 @@ export default function Home() {
       return;
     }
 
-    // Solde CELO (RPC public Forno)
+    // Solde CELO
     (async () => {
       try {
         const res = await fetch("https://forno.celo.org", {
@@ -113,7 +121,7 @@ export default function Home() {
       }
     })();
 
-    // Comptage L1/L2 via notre API
+    // Tx count L1/L2 via /api/txcount
     (async () => {
       try {
         const res = await fetch(`/api/txcount?address=${address}`);
@@ -138,9 +146,8 @@ export default function Home() {
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
-  // Callbacks depuis AppKitConnect (évite d’utiliser useAppKit ici)
+  // Callbacks AppKitConnect
   function handleConnected(info) {
-    // supporte string ou objet { address, chainId, wallet }
     const addr = typeof info === "string" ? info : info?.address;
     const cid = typeof info === "object" ? info?.chainId : null;
     const wallet = typeof info === "object" ? info?.wallet : undefined;
@@ -169,7 +176,7 @@ export default function Home() {
         <meta property="og:image" content="/og.png" />
         <link rel="icon" href="/icon.png" />
 
-        {/* Mini App + Frame embeds */}
+        {/* Mini App + Frame */}
         <meta
           name="fc:miniapp"
           content={JSON.stringify({
@@ -214,7 +221,6 @@ export default function Home() {
         <div className="wrap">
           {/* ======= HEADER ======= */}
           <header className="topbar">
-            {/* Brand */}
             <div className="brand">
               <img className="brand-logo" src="/icon.png" alt="Celo Lite" width="36" height="36" />
               <div className="brand-text">
@@ -223,12 +229,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* CeloPG au centre */}
             <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
-            {/* Actions à droite (AppKit + liens + thème) */}
             <div className="actions">
               <AppKitConnect
                 onConnected={handleConnected}
@@ -342,7 +346,6 @@ export default function Home() {
           {/* ======= FOOTER ======= */}
           <footer className="foot">
             <div className="social">
-              {/* X */}
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
@@ -350,7 +353,6 @@ export default function Home() {
                 <span>@Celo</span>
               </a>
 
-              {/* Support CeloPG */}
               <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
@@ -358,13 +360,11 @@ export default function Home() {
                 <span className="label">Support CeloPG</span>
               </a>
 
-              {/* Guild */}
               <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
                 <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
                 <span className="label">Celo's Communities Guild</span>
               </a>
 
-              {/* Self */}
               <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
                   <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
@@ -372,10 +372,9 @@ export default function Home() {
                 <span className="label">Self's support Telegram</span>
               </a>
 
-              {/* Discord */}
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -405,7 +404,6 @@ export default function Home() {
         .page{ min-height:100vh; display:flex; align-items:center; }
         .wrap{ width:100%; max-width:900px; margin:0 auto; padding:22px 16px; }
 
-        /* Header */
         .topbar{
           display:grid;
           grid-template-columns: auto 1fr auto;
@@ -437,7 +435,6 @@ export default function Home() {
         .pill .icon{ width:16px; height:16px; display:block; }
         .pill .emoji{ font-size:14px; }
 
-        /* Cards */
         .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; margin-top:12px; text-align:center; }
         .card h2{ margin:0 0 8px; font-size:20px; }
         .card p{ margin:0 0 10px; color:var(--muted) }
@@ -455,7 +452,6 @@ export default function Home() {
         .ok{ color: var(--muted) }
         .warn{ color:#b91c1c; font-weight:600 }
 
-        /* Footer */
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
@@ -463,7 +459,6 @@ export default function Home() {
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* Mobile */
         @media (max-width:640px){
           .topbar{
             grid-template-columns: 1fr 1fr;
