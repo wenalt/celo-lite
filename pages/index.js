@@ -1,17 +1,18 @@
 // pages/index.js
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useAccount, useBalance, useChainId, useDisconnect } from "wagmi";
 
-// ✅ correct path for AppKit connect UI
-const AppKitConnect = dynamic(
-  () => import("../components/wallets/AppKitConnect"),
-  { ssr: false }
-);
+// ─────────────────────────────────────────────────────────────
+// ✅ Reown AppKit + wagmi/viem (EIP-6963 & Farcaster Wallet)
+// ─────────────────────────────────────────────────────────────
+import { createAppKit } from "@reown/appkit";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { WagmiConfig, useAccount, useBalance, useChainId, useDisconnect } from "wagmi";
+import { http } from "viem";
 
-// Self.xyz (client-only)
+// Self dialog (client-only)
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
   { ssr: false }
@@ -20,66 +21,83 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
+// CELO chain config for viem/wagmi
 const CELO_CHAIN_ID = 42220;
+const celoChain = {
+  id: CELO_CHAIN_ID,
+  name: "Celo",
+  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://forno.celo.org"] },
+    public: { http: ["https://forno.celo.org"] },
+  },
+  blockExplorers: {
+    default: { name: "Celoscan", url: "https://celoscan.io" },
+  },
+};
+
+// WalletConnect / AppKit projectId
+const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
+
+// Wagmi adapter (transports + networks)
+const wagmiAdapter = new WagmiAdapter({
+  projectId: WC_PROJECT_ID,
+  networks: [celoChain],
+  transports: {
+    [celoChain.id]: http("https://forno.celo.org"),
+  },
+  ssr: true,
+});
+
+// Single AppKit instance (EIP-6963 + WC + Farcaster Wallet)
+export const appKit = createAppKit({
+  adapters: [wagmiAdapter],
+  projectId: WC_PROJECT_ID,
+  networks: [celoChain],
+  metadata: {
+    name: "Celo Lite",
+    description: "Ecosystem · Staking · Governance",
+    url: "https://celo-lite.vercel.app",
+    icons: ["https://celo-lite.vercel.app/icon.png"],
+  },
+  // (optionnel) tu peux ajuster l'apparence plus tard
+  features: {
+    email: false, // pas d'email login
+  },
+});
+
+// Utilitaires
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
 
-function short(addr) {
-  return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
+function shortAddr(a) {
+  return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "";
 }
 
-export default function Home() {
-  // ===== Wallet (wagmi + AppKit) =====
+function AppInner() {
+  const [theme, setTheme] = useState("auto");
+  const [openSelf, setOpenSelf] = useState(false);
+
+  // wagmi state (address, chain, disconnect)
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { disconnect } = useDisconnect();
-
-  const {
-    data: bal,
-    isLoading: balLoading,
-  } = useBalance({
+  const { data: balanceData, isLoading: balanceLoading } = useBalance({
     address,
     chainId: CELO_CHAIN_ID,
-    watch: true,
-    enabled: Boolean(address),
+    unit: "ether",
+    query: { enabled: !!address },
   });
 
-  // ===== Theme =====
-  const [theme, setTheme] = useState("auto");
-  useEffect(() => {
-    const saved =
-      typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
-    if (saved === "light" || saved === "dark" || saved === "auto") {
-      setTheme(saved);
-    }
-  }, []);
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const root = document.documentElement;
-    if (theme === "light") root.setAttribute("data-theme", "light");
-    else if (theme === "dark") root.setAttribute("data-theme", "dark");
-    else root.removeAttribute("data-theme");
-    try {
-      localStorage.setItem("celo-lite-theme", theme);
-    } catch {}
-  }, [theme]);
-  const themeLabel =
-    theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
-  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
-  function cycleTheme() {
-    setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
-  }
+  // Farcaster mini app ready
+  useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
-  // ===== Mini App ready() =====
+  // theme: load saved
   useEffect(() => {
-    (async () => {
-      try {
-        await sdk.actions.ready();
-      } catch {}
-    })();
+    const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
+    if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
 
-  // ===== Self.xyz dialog =====
-  const [openSelf, setOpenSelf] = useState(false);
+  // open Self modal via ?self=1
   useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
@@ -87,45 +105,31 @@ export default function Home() {
     }
   }, []);
 
-  // ===== L1/L2 tx counts =====
-  const [txs, setTxs] = useState({ l1: null, l2: null, since: null, err: null });
+  // apply theme
   useEffect(() => {
-    let abort = false;
-    async function load() {
-      if (!address) {
-        setTxs({ l1: null, l2: null, since: null, err: null });
-        return;
-      }
-      try {
-        const r = await fetch(`/api/txcount?address=${address}`);
-        const j = await r.json();
-        if (!abort) {
-          setTxs({
-            l1: j?.l1 ?? 0,
-            l2: j?.l2 ?? 0,
-            since: j?.since ?? "25 Mar 2025",
-            err: null,
-          });
-        }
-      } catch (e) {
-        if (!abort) setTxs({ l1: null, l2: null, since: null, err: String(e) });
-      }
-    }
-    load();
-    return () => {
-      abort = true;
-    };
-  }, [address]);
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (theme === "light") root.setAttribute("data-theme", "light");
+    else if (theme === "dark") root.setAttribute("data-theme", "dark");
+    else root.removeAttribute("data-theme");
+    localStorage.setItem("celo-lite-theme", theme);
+  }, [theme]);
 
-  // open AppKit modal
-  const openConnect = () => {
-    // AppKit injected globally by /lib/appkit (created in _app.js)
-    try {
-      window?.appKit?.open?.({ view: "Connect" });
-    } catch {
-      // fallback: render the AppKitConnect button click programmatically if needed
-    }
-  };
+  function cycleTheme() {
+    setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
+  }
+
+  function connect() {
+    // ouvre le modal AppKit (WalletConnect + Injected EIP-6963 + Farcaster Wallet)
+    appKit.open();
+  }
+
+  function onDisconnect() {
+    try { disconnect(); } catch {}
+  }
+
+  const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
+  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
     <>
@@ -137,7 +141,7 @@ export default function Home() {
         <meta property="og:image" content="/og.png" />
         <link rel="icon" href="/icon.png" />
 
-        {/* Farcaster Mini App + Frame embeds */}
+        {/* Mini App + Frame embeds */}
         <meta
           name="fc:miniapp"
           content={JSON.stringify({
@@ -176,15 +180,12 @@ export default function Home() {
         {/* Inter font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="page">
         <div className="wrap">
-          {/* ======= HEADER ======= */}
+          {/* ======= HEADER (conserve ta mise en page actuelle) ======= */}
           <header className="topbar">
             {/* Left: brand */}
             <div className="brand">
@@ -195,14 +196,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Center badge: CeloPG */}
-            <a
-              className="centerBadge"
-              href="https://www.celopg.eco/"
-              target="_blank"
-              rel="noreferrer"
-              title="CeloPG"
-            >
+            {/* Center: CeloPG */}
+            <a className="centerBadge" href="https://www.celopg.eco/" target="_blank" rel="noreferrer" title="CeloPG">
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
@@ -210,33 +205,21 @@ export default function Home() {
             <div className="actions">
               {isConnected ? (
                 <div className="wallet-inline">
-                  <span className="addr">{short(address)}</span>
-                  <button className={BTN} onClick={() => disconnect()}>Disconnect</button>
+                  <span className="addr">{shortAddr(address)}</span>
+                  <button className={BTN} onClick={onDisconnect}>Disconnect</button>
                 </div>
               ) : (
-                <button className="wallet-cta" onClick={openConnect} title="Connect wallet">
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
                   Connect Wallet
                 </button>
               )}
 
-              <a
-                className="pill"
-                href="https://warpcast.com/wenaltszn.eth"
-                target="_blank"
-                rel="noreferrer"
-                title="Farcaster profile"
-              >
+              <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
                 <img className="icon" src="/farcaster.png" alt="" />
                 <span>@wenaltszn.eth</span>
               </a>
 
-              <a
-                className="pill"
-                href="https://github.com/wenalt"
-                target="_blank"
-                rel="noreferrer"
-                title="GitHub"
-              >
+              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
                 <img className="icon" src="/github.svg" alt="" />
                 <span>GitHub</span>
               </a>
@@ -248,34 +231,17 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Keep AppKit mounted (SSR-safe via dynamic above) */}
-          <AppKitConnect />
-
-          {/* ===== Wallet status ===== */}
+          {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
             {isConnected ? (
               <>
-                <p><b>{short(address)}</b></p>
+                <p><b>{shortAddr(address)}</b></p>
                 <p className={chainId === CELO_CHAIN_ID ? "ok" : "warn"}>
-                  chain: {chainId ? `0x${chainId.toString(16)}` : "-"}{" "}
-                  {chainId === CELO_CHAIN_ID ? "(celo)" : "(switch to Celo to stake/vote)"}
+                  chain: {chainId ? `0x${Number(chainId).toString(16)}` : "-"} {chainId === CELO_CHAIN_ID ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
                 <p>
-                  balance:{" "}
-                  {balLoading
-                    ? "…"
-                    : bal
-                    ? `${bal.formatted.slice(0, 8)} ${bal.symbol}`
-                    : "—"}
-                </p>
-                <p>
-                  transactions:{" "}
-                  {txs.l1 == null ? "…" : `${txs.l1} (L1)`} ·{" "}
-                  {txs.l2 == null ? "…" : `${txs.l2} (L2)`}
-                </p>
-                <p className="hint">
-                  L2 counted since {txs.since || "25 Mar 2025"}.
+                  balance: {balanceLoading ? "…" : (balanceData ? `${Number(balanceData.formatted).toFixed(4)} CELO` : "0")}
                 </p>
               </>
             ) : (
@@ -288,21 +254,10 @@ export default function Home() {
             <h2>Governance</h2>
             <p>Get voting power by staking on a validator, then participate in proposals.</p>
             <div className="btns">
-              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">
-                Open Mondo
-              </a>
-              <a
-                className={BTN}
-                href="https://mondo.celo.org/governance"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Browse Governance
-              </a>
+              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
+              <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
             </div>
-            <p className="hint">
-              opens in the embedded browser — you’ll use <b>your</b> EVM wallet.
-            </p>
+            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
           {/* Prosperity Passport */}
@@ -310,12 +265,8 @@ export default function Home() {
             <h2>Prosperity Passport</h2>
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
-              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">
-                Open CeloPG
-              </a>
-              <button className={BTN} onClick={() => setOpenSelf(true)}>
-                Self.xyz Verification
-              </button>
+              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG</a>
+              <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
             </div>
           </section>
 
@@ -332,22 +283,10 @@ export default function Home() {
             <h2>Ecosystem</h2>
             <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
             <div className="btns">
-              <a
-                className={BTN}
-                href="https://www.glodollar.org/"
-                target="_blank"
-                rel="noreferrer"
-                title="USD Glo Dollar"
-              >
+              <a className={BTN} href="https://www.glodollar.org/" target="_blank" rel="noreferrer" title="USD Glo Dollar">
                 USD Glo Dollar
               </a>
-              <a
-                className={BTN}
-                href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548"
-                target="_blank"
-                rel="noreferrer"
-                title="Retire Eco Credits on Regen Atlas"
-              >
+              <a className={BTN} href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" target="_blank" rel="noreferrer" title="Retire Eco Credits on Regen Atlas">
                 Retire Eco Credits (Regen Atlas)
               </a>
             </div>
@@ -358,17 +297,8 @@ export default function Home() {
             <h2>Routines</h2>
             <p>Keep a healthy onchain cadence: learn, earn, and keep reputation active.</p>
             <div className="btns">
-              <a
-                className={BTN}
-                href="https://app.layer3.xyz/search?chainIds=42220&types=current_season"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open Layer3
-              </a>
-              <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">
-                Claim $G
-              </a>
+              <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">Open Layer3</a>
+              <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">Claim $G</a>
             </div>
           </section>
 
@@ -377,120 +307,51 @@ export default function Home() {
             <h2>Builders Programs</h2>
             <p>Programs that fund and accelerate public-good builders on Celo.</p>
             <div className="btns">
-              <a
-                className={BTN}
-                href="https://www.celopg.eco/programs/goodbuilders-round-2"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Goodbuilders Round 2
-              </a>
-              <a
-                className={BTN}
-                href="https://www.celopg.eco/programs/proof-of-ship-s1"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Proof Of Ship
-              </a>
-              <a
-                className={BTN}
-                href="https://www.celopg.eco/programs/proof-of-impact-s1"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Proof Of Impact
-              </a>
-              <a
-                className={BTN}
-                href="https://www.celopg.eco/programs/supportstreams1"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Support Streams
-              </a>
+              <a className={BTN} href="https://www.celopg.eco/programs/goodbuilders-round-2" target="_blank" rel="noreferrer">Goodbuilders Round 2</a>
+              <a className={BTN} href="https://www.celopg.eco/programs/proof-of-ship-s1" target="_blank" rel="noreferrer">Proof Of Ship</a>
+              <a className={BTN} href="https://www.celopg.eco/programs/proof-of-impact-s1" target="_blank" rel="noreferrer">Proof Of Impact</a>
+              <a className={BTN} href="https://www.celopg.eco/programs/supportstreams1" target="_blank" rel="noreferrer">Support Streams</a>
             </div>
           </section>
 
-          {/* Footer links: X, Support CeloPG, Guild, Self, Discord */}
+          {/* Footer links (order: X, Support CeloPG, Guild, Self, Discord) */}
           <footer className="foot">
             <div className="social">
-              <a
-                className="icon-link"
-                href="https://x.com/Celo"
-                target="_blank"
-                rel="noreferrer"
-                title="@Celo on X"
-              >
+              <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z" />
+                  <path d="M17.5 3h3.1l-6.8 7.8L22 21h-6.3l-4.9-6.4L5.1 21H2l7.4-8.6L2 3h6.4l4.4 5.8L17.5 3zm-1.1 16h1.7L7.7 5h-1.7L16.4 19z"/>
                 </svg>
                 <span>@Celo</span>
               </a>
 
-              <a
-                className="icon-link"
-                href="https://t.me/+3uD9NKPbStYwY2Nk"
-                target="_blank"
-                rel="noreferrer"
-                title="Support CeloPG"
-              >
+              <a className="icon-link" href="https://t.me/+3uD9NKPbStYwY2Nk" target="_blank" rel="noreferrer" title="Support CeloPG">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
-                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
                 <span className="label">Support CeloPG</span>
               </a>
 
-              <a
-                className="icon-link"
-                href="https://guild.xyz/celo-communities"
-                target="_blank"
-                rel="noreferrer"
-                title="Celo's Communities Guild"
-              >
-                <img
-                  src="/guild.jpg"
-                  alt="Guild"
-                  width="22"
-                  height="22"
-                  style={{ borderRadius: 6, display: "block" }}
-                />
+              <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
+                <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
                 <span className="label">Celo's Communities Guild</span>
               </a>
 
-              <a
-                className="icon-link"
-                href="https://t.me/selfxyz"
-                target="_blank"
-                rel="noreferrer"
-                title="Self's support Telegram"
-              >
+              <a className="icon-link" href="https://t.me/selfxyz" target="_blank" rel="noreferrer" title="Self's support Telegram">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#2AABEE" aria-hidden>
-                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z"/>
                 </svg>
                 <span className="label">Self's support Telegram</span>
               </a>
 
-              <a
-                className="icon-link"
-                href="https://discord.gg/celo"
-                target="_blank"
-                rel="noreferrer"
-                title="Celo Discord"
-              >
+              <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path
-                    fill="#5865F2"
-                    d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"
-                  />
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
             </div>
 
-            <p className="madeby">
-              Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel
-            </p>
+            <p className="madeby">Questions or suggestions? ping me on farcaster or join the Prosperity Passport support Telegram channel</p>
           </footer>
         </div>
       </main>
@@ -604,5 +465,13 @@ export default function Home() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <WagmiConfig config={wagmiAdapter.wagmiConfig}>
+      <AppInner />
+    </WagmiConfig>
   );
 }
