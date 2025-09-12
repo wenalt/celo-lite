@@ -1,47 +1,50 @@
 // pages/_app.js
-import { useEffect, useState } from 'react'
-import Head from 'next/head'
-import { WagmiProvider } from 'wagmi'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { getWagmiAdapter, ensureAppKit } from '../lib/appkit'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiConfig } from "wagmi";
+
+import { createAppKit } from "@reown/appkit/react";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+
+// ✅ Réseaux AppKit (inclut Celo)
+import { celo } from "@reown/appkit/networks";
+
+const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
+
+// Métadonnées pour WalletConnect/AppKit
+const metadata = {
+  name: "Celo Lite",
+  description: "Ecosystem · Staking · Governance",
+  url: "https://celo-lite.vercel.app",
+  icons: ["https://celo-lite.vercel.app/icon.png"],
+};
+
+// ✅ Liste des réseaux supportés par l’app (CRUCIAL)
+const networks = [celo];
+
+// Adapter Wagmi pour AppKit (ssr: true pour Next.js pages/SSR)
+const wagmiAdapter = new WagmiAdapter({
+  projectId,
+  networks,   // <-- indispensable
+  ssr: true,
+});
+
+// Instancie AppKit une seule fois au chargement du module
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks,   // <-- indispensable
+  metadata,
+  // features: { email: false } // (optionnel)
+});
+
+const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
-  const [queryClient] = useState(() => new QueryClient())
-  const [wagmi, setWagmi] = useState(null)
-
-  // Init AppKit only on client; render after wagmi is ready
-  useEffect(() => {
-    try {
-      const adapter = ensureAppKit()
-      setWagmi(adapter)
-      if (!adapter) {
-        // rare: retry once if first call ran before window initialized
-        const t = setTimeout(() => setWagmi(ensureAppKit()), 150)
-        return () => clearTimeout(t)
-      }
-    } catch (e) {
-      console.error('AppKit init error:', e)
-    }
-  }, [])
-
-  if (!wagmi?.wagmiConfig) {
-    // Avoid rendering wagmi hooks until config is ready
-    return (
-      <>
-        <Head><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
-        <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />
-      </>
-    )
-  }
-
   return (
-    <>
-      <Head><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
-      <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmi.wagmiConfig}>
-          <Component {...pageProps} />
-        </WagmiProvider>
-      </QueryClientProvider>
-    </>
-  )
+    <QueryClientProvider client={queryClient}>
+      <WagmiConfig config={wagmiAdapter.wagmiConfig}>
+        <Component {...pageProps} />
+      </WagmiConfig>
+    </QueryClientProvider>
+  );
 }
