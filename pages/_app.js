@@ -9,18 +9,22 @@ export default function App({ Component, pageProps }) {
   const [queryClient] = useState(() => new QueryClient())
   const [wagmi, setWagmi] = useState(null)
 
-  // Initialise AppKit + récupère l'adapter UNIQUEMENT côté client
+  // Init AppKit UNIQUEMENT côté client, puis récupère l’adapter
   useEffect(() => {
-    try {
-      ensureAppKit()                    // idempotent + safe SSR
-      const adapter = getWagmiAdapter() // singleton créé par ensureAppKit
-      setWagmi(adapter)
-    } catch (e) {
-      console.error('AppKit init error:', e)
+    const adapter = ensureAppKit()
+    setWagmi(adapter)
+
+    // Sécurité: si jamais quelque chose retarde l’init, on retente 1x
+    if (!adapter) {
+      const t = setTimeout(() => {
+        const again = ensureAppKit()
+        setWagmi(again)
+      }, 200)
+      return () => clearTimeout(t)
     }
   }, [])
 
-  // Pendant l'init, on évite de rendre des hooks wagmi
+  // Tant que wagmiConfig pas prêt, on évite de rendre des hooks wagmi
   if (!wagmi?.wagmiConfig) {
     return (
       <>
