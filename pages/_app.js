@@ -1,50 +1,70 @@
 // pages/_app.js
+import { useState } from "react";
+import Head from "next/head";
+import dynamic from "next/dynamic";
+
+import { WagmiConfig, createConfig, http } from "wagmi";
+import { celo } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiConfig } from "wagmi";
 
-import { createAppKit } from "@reown/appkit/react";
+// AppKit core + adapter
+import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import "@reown/appkit/styles.css";
 
-// ✅ Réseaux AppKit (inclut Celo)
-import { celo } from "@reown/appkit/networks";
+// ⬇️ The frame required for socials (Farcaster)
+const W3mFrame = dynamic(
+  () => import("@reown/appkit-react").then((m) => m.W3mFrame),
+  { ssr: false }
+);
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
-// Métadonnées pour WalletConnect/AppKit
-const metadata = {
-  name: "Celo Lite",
-  description: "Ecosystem · Staking · Governance",
-  url: "https://celo-lite.vercel.app",
-  icons: ["https://celo-lite.vercel.app/icon.png"],
-};
-
-// ✅ Liste des réseaux supportés par l’app (CRUCIAL)
-const networks = [celo];
-
-// Adapter Wagmi pour AppKit (ssr: true pour Next.js pages/SSR)
-const wagmiAdapter = new WagmiAdapter({
-  projectId,
-  networks,   // <-- indispensable
+// Your Wagmi config (same as before)
+const wagmiConfig = createConfig({
+  chains: [celo],
+  transports: { [celo.id]: http("https://forno.celo.org") },
   ssr: true,
 });
 
-// Instancie AppKit une seule fois au chargement du module
-createAppKit({
-  adapters: [wagmiAdapter],
-  projectId,
-  networks,   // <-- indispensable
-  metadata,
-  // features: { email: false } // (optionnel)
-});
+// AppKit init (run once in browser)
+if (typeof window !== "undefined" && !window.__APPKIT_CREATED__) {
+  const metadata = {
+    name: "Celo Lite",
+    description: "Ecosystem · Staking · Governance",
+    url: "https://celo-lite.vercel.app",
+    icons: ["/icon.png"],
+  };
 
-const queryClient = new QueryClient();
+  const adapters = [new WagmiAdapter({ wagmiConfig })];
+
+  createAppKit({
+    adapters,
+    projectId,
+    metadata,
+    // ⬇️ Enable Farcaster social login; remove if you don’t want it to show
+    features: { socials: ["farcaster"], email: false },
+  });
+
+  window.__APPKIT_CREATED__ = true;
+}
 
 export default function App({ Component, pageProps }) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
-    <QueryClientProvider client={queryClient}>
-      <WagmiConfig config={wagmiAdapter.wagmiConfig}>
-        <Component {...pageProps} />
-      </WagmiConfig>
-    </QueryClientProvider>
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+
+      <QueryClientProvider client={queryClient}>
+        <WagmiConfig config={wagmiConfig}>
+          <Component {...pageProps} />
+        </WagmiConfig>
+
+        {/* Required for Farcaster social/OAuth */}
+        <W3mFrame />
+      </QueryClientProvider>
+    </>
   );
 }
