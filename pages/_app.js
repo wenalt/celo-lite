@@ -12,7 +12,7 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 // Charge W3mFrame côté client uniquement (nécessaire pour Farcaster Wallet)
 import dynamic from "next/dynamic";
 const W3mFrameNoSSR = dynamic(
-  () => import("@reown/appkit-react").then((m) => m.W3mFrame),
+  () => import("@reown/appkit/react").then((m) => m.W3mFrame),
   { ssr: false }
 );
 
