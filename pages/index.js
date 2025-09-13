@@ -578,39 +578,22 @@ export default function Home() {
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
         /* Mobile layout */
-@media (max-width:640px){
-  .topbar{
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "brand actions"
-      "badge badge";
-    column-gap:8px;
-    row-gap:8px;
-  }
-  .brand{ grid-area: brand; }
-  .actions{
-    grid-area: actions;
-    justify-self:end;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;           /* allow wrapping */
-    max-width:100%;
-  }
-  .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
-  h1{ font-size:22px; }
-  .tagline{ font-size:12px; }
-
-  /* make pills smaller on mobile */
-  .pill{ min-width:auto; padding:0 10px; height:34px; }
-  .wallet-cta{ min-width:auto; padding:0 12px; height:36px; }
-
-  /* prevent horizontal scroll */
-  .wrap{ padding-left:12px; padding-right:12px; overflow-x:hidden; }
-}
-
-/* Extra-small phones: show icon-only pills to save space */
-@media (max-width:480px){
-  .pill span{ display:none; }     /* hide text label, keep icon/emoji */
-  .pill{ width:36px; padding:0; justify-content:center; }
+        @media (max-width:640px){
+          .topbar{
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              "brand actions"
+              "badge badge";
+            row-gap:8px;
+          }
+          .brand{ grid-area: brand; }
+          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
+          h1{ font-size:22px; }
+          .tagline{ font-size:12px; }
+          .pill{ min-width:auto; padding:0 10px; }
+        }
+      `}</style>
+    </>
+  );
 }
