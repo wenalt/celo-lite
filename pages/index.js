@@ -47,7 +47,7 @@ export default function Home() {
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // --- NEW: compteur de transactions L1/L2 ---
+  // Compteur de transactions L1/L2
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
@@ -74,14 +74,6 @@ export default function Home() {
     else root.removeAttribute("data-theme");
     localStorage.setItem("celo-lite-theme", theme);
   }, [theme]);
-
-  // NEW: tag <html> selon connexion pour masquer toute bannière réseau avant connexion
-  useEffect(() => {
-    const root = typeof document !== "undefined" ? document.documentElement : null;
-    if (!root) return;
-    if (address) root.setAttribute("data-connected", "1");
-    else root.removeAttribute("data-connected");
-  }, [address]);
 
   function cycleTheme() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
@@ -155,19 +147,18 @@ export default function Home() {
     return provider;
   }
 
-  // SOFT CONNECT: plus aucun switch réseau automatique ici
   async function connect() {
     const provider = await ensureProvider();
     if (!provider) return;
     try {
       await provider.connect();
-
       const addr = provider.accounts?.[0] || null;
       setAddress(addr);
 
       const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
       setChainId(currentCid);
 
+      // On NE force PAS le switch réseau ici (tu gères maintenant côté AppKit/WC UI)
       await refreshStatus(provider, addr);
     } catch (e) {
       console.error(e);
@@ -179,7 +170,7 @@ export default function Home() {
     setAddress(null); setChainId(null); setBalance(null);
   }
 
-  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
+  // charge le compteur L1/L2 quand l'adresse change (cache 5 min)
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -324,11 +315,11 @@ export default function Home() {
               <>
                 <p><b>{short(address)}</b></p>
                 <p className={chainId === CELO_HEX ? "ok" : "warn"}>
-                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
+                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : ""}
                 </p>
                 <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
 
-                {/* --- NEW: affichage compteur L1/L2 --- */}
+                {/* Compteur L1/L2 */}
                 <p>
                   {txLoading
                     ? "transactions: …"
@@ -440,7 +431,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -494,7 +485,7 @@ export default function Home() {
         .centerBadge img{ width:26px; height:26px; display:block; }
 
         /* Actions pinned right */
-        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
+        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
         .pill{
           display:inline-flex; align-items:center; gap:8px;
           height:36px; min-width:136px; padding:0 12px;
@@ -541,30 +532,42 @@ export default function Home() {
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* Mobile layout */
-        @media (max-width:640px){
-          .topbar{
-            grid-template-columns: 1fr 1fr;
-            grid-template-areas:
-              "brand actions"
-              "badge badge";
-            row-gap:8px;
-          }
-          .brand{ grid-area: brand; }
-          .actions{ grid-area: actions; justify-self:end; gap:8px; }
-          .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
-          h1{ font-size:22px; }
-          .tagline{ font-size:12px; }
-          .pill{ min-width:auto; padding:0 10px; }
-          .wallet-cta{ min-width:auto; padding:0 12px; }
+        /* AppKit: masquer la rangée "socials" (icônes cassées sur certains devices) */
+        w3m-modal .w3m-socials,
+        w3m-modal [data-testid="w3m-socials"],
+        w3m-modal wui-socials,
+        [id^="w3m-modal"] [class*="socials"]{
+          display: none !important;
         }
 
-        /* NEW: cache toute bannière "switch network" tant que non connecté */
-        html:not([data-connected="1"]) .wui-alert,
-        html:not([data-connected="1"]) .wui-network-switch,
-        html:not([data-connected="1"]) w3m-network-switch,
-        html:not([data-connected="1"]) [class*="network-switch"]{
-          display: none !important;
+        /* Mobile layout - header propre et centré */
+        @media (max-width:640px){
+          .topbar{
+            grid-template-columns: 1fr;
+            grid-template-areas:
+              "brand"
+              "actions"
+              "badge";
+            row-gap: 10px;
+            align-items: start;
+          }
+          .brand{ grid-area: brand; }
+          .actions{
+            grid-area: actions;
+            justify-self: center;
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center;
+            gap:8px;
+            max-width:100%;
+          }
+          .centerBadge{ grid-area: badge; justify-self:center; margin-top:0; }
+
+          h1{ font-size:22px; }
+          .tagline{ font-size:12px; }
+
+          .pill{ min-width:auto; padding:0 10px; height:34px; font-size:12px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; height:36px; font-size:13px; }
         }
       `}</style>
     </>
