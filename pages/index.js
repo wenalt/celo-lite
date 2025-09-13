@@ -3,6 +3,10 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
+import AppKitConnect from "../components/wallets/AppKitConnect";
+
+// wagmi (pour adresse / réseau / balance)
+import { useAccount, useChainId, useBalance } from "wagmi";
 
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
@@ -12,42 +16,27 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
-async function getEthereumProviderClass() {
-  if (typeof window === "undefined") return null;
-  const mod = await import("@walletconnect/ethereum-provider");
-  return mod.EthereumProvider;
-}
-
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
-
-// Label pour l'indicateur L2 (date pivot)
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
-function formatCELO(weiHex) {
-  if (!weiHex) return "0";
-  try {
-    const wei = BigInt(weiHex);
-    const whole = wei / 1000000000000000000n;
-    const frac = (wei % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4);
-    return `${whole}.${frac}`;
-  } catch {
-    return "0";
-  }
-}
-
 export default function Home() {
-  const [address, setAddress] = useState(null);
-  const [wcProvider, setWcProvider] = useState(null);
-  const [chainId, setChainId] = useState(null);
-  const [balance, setBalance] = useState(null);
+  // ---- wagmi: état wallet ----
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
 
-  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
+  const { data: balData, isLoading: balLoading } = useBalance({
+    address,
+    chainId: CELO_CHAIN_ID, // on lit sur Celo mainnet
+    enabled: Boolean(address),
+    watch: true,
+  });
 
+  // ---- app state UI ----
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // Compteur de transactions L1/L2
+  // compteur L1/L2
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
@@ -79,98 +68,7 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  async function refreshStatus(p = wcProvider, addr = address) {
-    if (!p || !addr) return;
-    try {
-      const [cid, bal] = await Promise.all([
-        p.request({ method: "eth_chainId" }),
-        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
-      ]);
-      setChainId(cid);
-      setBalance(bal);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function ensureProvider() {
-    if (wcProvider) return wcProvider;
-
-    let EthereumProvider;
-    try {
-      EthereumProvider = await getEthereumProviderClass();
-      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
-    } catch (e) {
-      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
-      return null;
-    }
-
-    const provider = await EthereumProvider.init({
-      projectId,
-      showQrModal: true,
-      chains: [CELO_CHAIN_ID],
-      methods: [
-        "eth_sendTransaction",
-        "personal_sign",
-        "eth_signTypedData",
-        "wallet_switchEthereumChain",
-        "wallet_addEthereumChain",
-      ],
-      events: ["accountsChanged", "chainChanged", "disconnect"],
-      metadata: {
-        name: "Celo Lite",
-        description: "Ecosystem · Staking · Governance",
-        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
-        icons: ["/icon.png"],
-      },
-    });
-
-    provider.on("accountsChanged", (accs) => {
-      const a = accs?.[0] || null;
-      setAddress(a);
-      if (a) refreshStatus(provider, a);
-      else setBalance(null);
-    });
-
-    provider.on("chainChanged", (cid) => {
-      setChainId(cid);
-      if (address) refreshStatus(provider, address);
-    });
-
-    provider.on("disconnect", () => {
-      setAddress(null);
-      setChainId(null);
-      setBalance(null);
-    });
-
-    setWcProvider(provider);
-    return provider;
-  }
-
-  async function connect() {
-    const provider = await ensureProvider();
-    if (!provider) return;
-    try {
-      await provider.connect();
-      const addr = provider.accounts?.[0] || null;
-      setAddress(addr);
-
-      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
-      setChainId(currentCid);
-
-      // On NE force PAS le switch réseau ici (tu gères maintenant côté AppKit/WC UI)
-      await refreshStatus(provider, addr);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function disconnect() {
-    try { await wcProvider?.disconnect(); } catch {}
-    setAddress(null); setChainId(null); setBalance(null);
-  }
-
-  // charge le compteur L1/L2 quand l'adresse change (cache 5 min)
+  // ---- compteur L1/L2 basé sur l'adresse connectée ----
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -211,6 +109,11 @@ export default function Home() {
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
+  const balanceDisplay = balLoading
+    ? "…"
+    : balData
+      ? `${Number(balData.formatted).toFixed(4)} ${balData.symbol || "CELO"}`
+      : "…";
 
   return (
     <>
@@ -279,28 +182,17 @@ export default function Home() {
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
+            {/* AppKit gère le connect/disconnect et ouvre le modal */}
             <div className="actions">
-              {address ? (
-                <div className="wallet-inline">
-                  <span className="addr">{short(address)}</span>
-                  <button className={BTN} onClick={disconnect}>Disconnect</button>
-                </div>
-              ) : (
-                <button className="wallet-cta" onClick={connect} title="Connect wallet">
-                  Connect Wallet
-                </button>
-              )}
-
+              <AppKitConnect />
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
                 <img className="icon" src="/farcaster.png" alt="" />
                 <span>@wenaltszn.eth</span>
               </a>
-
               <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
                 <img className="icon" src="/github.svg" alt="" />
                 <span>GitHub</span>
               </a>
-
               <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
                 <span className="emoji">{themeIcon}</span>
                 <span>{themeLabel}</span>
@@ -311,13 +203,13 @@ export default function Home() {
           {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
-            {address ? (
+            {isConnected && address ? (
               <>
                 <p><b>{short(address)}</b></p>
-                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
-                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : ""}
+                <p className={chainId === CELO_CHAIN_ID || chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId ?? "-"} {chainId === CELO_CHAIN_ID || chainId === CELO_HEX ? "(celo)" : ""}
                 </p>
-                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
+                <p>balance: {balanceDisplay}</p>
 
                 {/* Compteur L1/L2 */}
                 <p>
@@ -360,7 +252,7 @@ export default function Home() {
             <SelfVerificationDialog
               open={openSelf}
               onClose={() => setOpenSelf(false)}
-              userAddress={address}
+              userAddress={address || null}
             />
           )}
 
@@ -495,7 +387,6 @@ export default function Home() {
         .pill .icon{ width:16px; height:16px; display:block; }
         .pill .emoji{ font-size:14px; }
 
-        /* Special, bigger white CTA */
         .wallet-cta{
           display:inline-flex; align-items:center; justify-content:center;
           height:40px; min-width:172px; padding:0 16px;
@@ -528,7 +419,7 @@ export default function Home() {
         .foot{ margin-top:16px; display:flex; flex-direction:column; gap:10px; }
         .social{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; }
         .icon-link{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--card); border:1px solid var(--ring); color:inherit; text-decoration:none; }
-        .icon-link svg{ display:block; } /* fix discord squish */
+        .icon-link svg{ display:block; }
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
