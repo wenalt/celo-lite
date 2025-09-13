@@ -3,10 +3,8 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
-import AppKitConnect from "../components/wallets/AppKitConnect";
-
-// wagmi (pour adresse / réseau / balance)
-import { useAccount, useChainId, useBalance } from "wagmi";
+import { ethers } from "ethers";
+import DailyCheckinABI from "../abi/DailyCheckin.json";
 
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
@@ -16,30 +14,68 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
+async function getEthereumProviderClass() {
+  if (typeof window === "undefined") return null;
+  const mod = await import("@walletconnect/ethereum-provider");
+  return mod.EthereumProvider;
+}
+
 const CELO_CHAIN_ID = 42220;
 const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
+
+// Label pivot L2 déjà utilisé
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
+// Adresse du contrat DailyCheckin (env > fallback)
+const CHECKIN_ADDR =
+  process.env.NEXT_PUBLIC_CHECKIN_ADDRESS ||
+  "0x8C654199617927a1F8218023D9c5bec42605a451";
+
+function formatCELO(weiHex) {
+  if (!weiHex) return "0";
+  try {
+    const wei = BigInt(weiHex);
+    const whole = wei / 1000000000000000000n;
+    const frac = (wei % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4);
+    return `${whole}.${frac}`;
+  } catch {
+    return "0";
+  }
+}
+
+function formatSecs(s) {
+  const n = Number(s || 0);
+  if (n <= 0) return "ready";
+  const h = Math.floor(n / 3600);
+  const m = Math.floor((n % 3600) / 60);
+  const sec = n % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
 export default function Home() {
-  // ---- wagmi: état wallet ----
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
+  const [address, setAddress] = useState(null);
+  const [wcProvider, setWcProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [balance, setBalance] = useState(null);
 
-  const { data: balData, isLoading: balLoading } = useBalance({
-    address,
-    chainId: CELO_CHAIN_ID, // on lit sur Celo mainnet
-    enabled: Boolean(address),
-    watch: true,
-  });
+  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  // ---- app state UI ----
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // compteur L1/L2
+  // --- NEW: compteur de transactions L1/L2 ---
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
+
+  // --- NEW: état Daily Check-in ---
+  const [ciCount, setCiCount] = useState(null);
+  const [ciLast, setCiLast] = useState(null);
+  const [ciLeft, setCiLeft] = useState(null); // seconds until next
+  const [ciBusy, setCiBusy] = useState(false);
+  const [ciError, setCiError] = useState(null);
 
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
@@ -68,7 +104,100 @@ export default function Home() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // ---- compteur L1/L2 basé sur l'adresse connectée ----
+  async function refreshStatus(p = wcProvider, addr = address) {
+    if (!p || !addr) return;
+    try {
+      const [cid, bal] = await Promise.all([
+        p.request({ method: "eth_chainId" }),
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
+      ]);
+      setChainId(cid);
+      setBalance(bal);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function ensureProvider() {
+    if (wcProvider) return wcProvider;
+
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
+    } catch (e) {
+      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
+      return null;
+    }
+
+    const provider = await EthereumProvider.init({
+      projectId,
+      showQrModal: true,
+      chains: [CELO_CHAIN_ID],
+      methods: [
+        "eth_sendTransaction",
+        "personal_sign",
+        "eth_signTypedData",
+        "wallet_switchEthereumChain",
+        "wallet_addEthereumChain",
+      ],
+      events: ["accountsChanged", "chainChanged", "disconnect"],
+      metadata: {
+        name: "Celo Lite",
+        description: "Ecosystem · Staking · Governance",
+        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
+        icons: ["/icon.png"],
+      },
+    });
+
+    provider.on("accountsChanged", (accs) => {
+      const a = accs?.[0] || null;
+      setAddress(a);
+      if (a) refreshStatus(provider, a);
+      else setBalance(null);
+    });
+
+    provider.on("chainChanged", (cid) => {
+      setChainId(cid);
+      if (address) refreshStatus(provider, address);
+    });
+
+    provider.on("disconnect", () => {
+      setAddress(null);
+      setChainId(null);
+      setBalance(null);
+    });
+
+    setWcProvider(provider);
+    return provider;
+  }
+
+  async function connect() {
+    const provider = await ensureProvider();
+    if (!provider) return;
+    try {
+      await provider.connect();
+      const addr = provider.accounts?.[0] || null;
+      setAddress(addr);
+
+      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
+      setChainId(currentCid);
+
+      // (On ne force plus le switch ici ; on laisse l’utilisateur décider)
+      await refreshStatus(provider, addr);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function disconnect() {
+    try { await wcProvider?.disconnect(); } catch {}
+    setAddress(null); setChainId(null); setBalance(null);
+    // reset check-in UI
+    setCiCount(null); setCiLast(null); setCiLeft(null); setCiError(null);
+  }
+
+  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -106,14 +235,86 @@ export default function Home() {
     })();
   }, [address]);
 
+  // --- NEW: helpers DailyCheckin (user-pays) ---
+  async function getCheckinContract() {
+    if (!wcProvider) throw new Error("No provider");
+    const bp = new ethers.BrowserProvider(wcProvider);
+    const signer = await bp.getSigner();
+    return new ethers.Contract(CHECKIN_ADDR, DailyCheckinABI, signer);
+  }
+
+  async function loadCheckin() {
+    if (!address || !wcProvider) return;
+    // Pour éviter les mauvaises lectures sur le mauvais réseau :
+    if (chainId !== CELO_HEX) {
+      setCiError("Switch to Celo to use check-in.");
+      setCiCount(null); setCiLast(null); setCiLeft(null);
+      return;
+    }
+    try {
+      setCiError(null);
+      const c = await getCheckinContract();
+      const [cnt, last, left] = await Promise.all([
+        c.checkinCount(address),
+        c.lastCheckin(address),
+        c.timeUntilNext(address),
+      ]);
+      setCiCount(Number(cnt));
+      setCiLast(Number(last));
+      setCiLeft(Number(left));
+    } catch (e) {
+      console.error(e);
+      setCiError("Failed to read check-in.");
+    }
+  }
+
+  useEffect(() => {
+    if (address && wcProvider) loadCheckin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, wcProvider, chainId]);
+
+  async function doCheckin() {
+    try {
+      setCiBusy(true); setCiError(null);
+      if (chainId !== CELO_HEX) {
+        // propose un switch doux
+        try {
+          await wcProvider.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: CELO_HEX }],
+          });
+          setChainId(CELO_HEX);
+        } catch (e) {
+          setCiBusy(false);
+          setCiError("Please switch to Celo Mainnet.");
+          return;
+        }
+      }
+      const c = await getCheckinContract();
+
+      // Check cooldown côté client pour UX
+      const left = await c.timeUntilNext(address);
+      if (Number(left) > 0) {
+        setCiBusy(false);
+        setCiLeft(Number(left));
+        setCiError("Cooldown active.");
+        return;
+      }
+
+      const tx = await c.checkIn();
+      await tx.wait();
+      await loadCheckin();
+    } catch (e) {
+      console.error(e);
+      setCiError(e?.message || "Check-in failed.");
+    } finally {
+      setCiBusy(false);
+    }
+  }
+
   const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
   const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
   const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
-  const balanceDisplay = balLoading
-    ? "…"
-    : balData
-      ? `${Number(balData.formatted).toFixed(4)} ${balData.symbol || "CELO"}`
-      : "…";
 
   return (
     <>
@@ -182,17 +383,28 @@ export default function Home() {
               <img src="/celopg.png" alt="CeloPG" />
             </a>
 
-            {/* AppKit gère le connect/disconnect et ouvre le modal */}
             <div className="actions">
-              <AppKitConnect />
+              {address ? (
+                <div className="wallet-inline">
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                </div>
+              ) : (
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                  Connect Wallet
+                </button>
+              )}
+
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
                 <img className="icon" src="/farcaster.png" alt="" />
                 <span>@wenaltszn.eth</span>
               </a>
+
               <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
                 <img className="icon" src="/github.svg" alt="" />
                 <span>GitHub</span>
               </a>
+
               <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
                 <span className="emoji">{themeIcon}</span>
                 <span>{themeLabel}</span>
@@ -203,15 +415,15 @@ export default function Home() {
           {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
-            {isConnected && address ? (
+            {address ? (
               <>
                 <p><b>{short(address)}</b></p>
-                <p className={chainId === CELO_CHAIN_ID || chainId === CELO_HEX ? "ok" : "warn"}>
-                  chain: {chainId ?? "-"} {chainId === CELO_CHAIN_ID || chainId === CELO_HEX ? "(celo)" : ""}
+                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
-                <p>balance: {balanceDisplay}</p>
+                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
 
-                {/* Compteur L1/L2 */}
+                {/* transactions L1/L2 */}
                 <p>
                   {txLoading
                     ? "transactions: …"
@@ -221,6 +433,38 @@ export default function Home() {
                 </p>
                 {txError ? <p className="warn">{txError}</p> : null}
                 <p className="hint">L2 counted since {CELO_L2_START_LABEL}.</p>
+
+                {/* --- NEW: Daily Check-in (user pays gas) --- */}
+                {CHECKIN_ADDR ? (
+                  <>
+                    <div style={{ marginTop: 12, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                      <button
+                        className={BTN}
+                        onClick={doCheckin}
+                        disabled={ciBusy || chainId !== CELO_HEX || Number(ciLeft || 0) > 0}
+                        title={
+                          chainId !== CELO_HEX
+                            ? "Switch to Celo to use check-in"
+                            : Number(ciLeft || 0) > 0
+                            ? `Cooldown: ${formatSecs(ciLeft)}`
+                            : "Daily check-in"
+                        }
+                      >
+                        {ciBusy ? "Checking-in…" : "Daily check-in"}
+                      </button>
+                      <div style={{ fontSize: 13, color: "var(--muted)", alignSelf: "center" }}>
+                        {ciError
+                          ? <span style={{ color: "#b91c1c", fontWeight: 600 }}>{ciError}</span>
+                          : (
+                            <>
+                              total: {ciCount ?? "…"} · next: {ciLeft == null ? "…" : formatSecs(ciLeft)}
+                            </>
+                          )
+                        }
+                      </div>
+                    </div>
+                  </>
+                ) : null}
               </>
             ) : (
               <p>Connect to show status.</p>
@@ -252,7 +496,7 @@ export default function Home() {
             <SelfVerificationDialog
               open={openSelf}
               onClose={() => setOpenSelf(false)}
-              userAddress={address || null}
+              userAddress={address}
             />
           )}
 
@@ -292,7 +536,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer links */}
+          {/* Footer */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -377,7 +621,7 @@ export default function Home() {
         .centerBadge img{ width:26px; height:26px; display:block; }
 
         /* Actions pinned right */
-        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
+        .actions{ justify-self:end; display:flex; align-items:center; gap:10px; }
         .pill{
           display:inline-flex; align-items:center; gap:8px;
           height:36px; min-width:136px; padding:0 12px;
@@ -387,6 +631,7 @@ export default function Home() {
         .pill .icon{ width:16px; height:16px; display:block; }
         .pill .emoji{ font-size:14px; }
 
+        /* Special, bigger white CTA */
         .wallet-cta{
           display:inline-flex; align-items:center; justify-content:center;
           height:40px; min-width:172px; padding:0 16px;
@@ -423,42 +668,22 @@ export default function Home() {
         .icon-link .label{ display:none; color:inherit; } .icon-link:hover .label{ display:inline; }
         .madeby{ color:var(--muted); margin:0; text-align:center; }
 
-        /* AppKit: masquer la rangée "socials" (icônes cassées sur certains devices) */
-        w3m-modal .w3m-socials,
-        w3m-modal [data-testid="w3m-socials"],
-        w3m-modal wui-socials,
-        [id^="w3m-modal"] [class*="socials"]{
-          display: none !important;
-        }
-
-        /* Mobile layout - header propre et centré */
+        /* Mobile layout */
         @media (max-width:640px){
           .topbar{
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
             grid-template-areas:
-              "brand"
-              "actions"
-              "badge";
-            row-gap: 10px;
-            align-items: start;
+              "brand actions"
+              "badge badge";
+            row-gap:8px;
           }
           .brand{ grid-area: brand; }
-          .actions{
-            grid-area: actions;
-            justify-self: center;
-            display:flex;
-            flex-wrap:wrap;
-            justify-content:center;
-            gap:8px;
-            max-width:100%;
-          }
-          .centerBadge{ grid-area: badge; justify-self:center; margin-top:0; }
-
+          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
           h1{ font-size:22px; }
           .tagline{ font-size:12px; }
-
-          .pill{ min-width:auto; padding:0 10px; height:34px; font-size:12px; }
-          .wallet-cta{ min-width:auto; padding:0 12px; height:36px; font-size:13px; }
+          .pill{ min-width:auto; padding:0 10px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; }
         }
       `}</style>
     </>
