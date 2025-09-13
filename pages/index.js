@@ -1,18 +1,8 @@
 // pages/index.js
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { ethers } from "ethers";
-
-// wagmi (AppKit)
-import { useAccount, useChainId, useBalance, useWalletClient } from "wagmi";
-
-// bouton AppKit (ton composant)
-import AppKitConnect from "../components/wallets/AppKitConnect";
-
-// ABI DailyCheckin
-import DailyCheckinABI from "../abi/DailyCheckin.json";
 
 const SelfVerificationDialog = dynamic(
   () => import("../components/self/SelfVerificationDialog"),
@@ -22,81 +12,60 @@ const SelfVerificationDialog = dynamic(
 const BTN = "btn";
 const CARD = "card";
 
+async function getEthereumProviderClass() {
+  if (typeof window === "undefined") return null;
+  const mod = await import("@walletconnect/ethereum-provider");
+  return mod.EthereumProvider;
+}
+
 const CELO_CHAIN_ID = 42220;
+const CELO_HEX = `0x${CELO_CHAIN_ID.toString(16)}`;
+
+// Label pour l'indicateur L2 (date pivot)
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
-const CHECKIN_ADDR =
-  process.env.NEXT_PUBLIC_CHECKIN_ADDRESS ||
-  "0x8C654199617927a1F8218023D9c5bec42605a451";
-
-// --- utils ---
-function formatSecs(s) {
-  const n = Number(s || 0);
-  if (n <= 0) return "ready";
-  const h = Math.floor(n / 3600);
-  const m = Math.floor((n % 3600) / 60);
-  const sec = n % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
-}
-const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
-
-// BrowserProvider helper (wagmi walletClient -> ethers signer)
-async function getEthersSigner(walletClient) {
-  let eip1193 = null;
-
-  // 1) priorité à l’injected (Rabby/MetaMask desktop)
-  if (typeof window !== "undefined" && window.ethereum) eip1193 = window.ethereum;
-
-  // 2) fallback : transport wagmi (WalletConnect via AppKit, Farcaster Wallet, etc.)
-  if (!eip1193 && walletClient?.transport) eip1193 = walletClient.transport;
-
-  if (!eip1193 || typeof eip1193.request !== "function") {
-    throw new Error("No EIP-1193 provider available");
+function formatCELO(weiHex) {
+  if (!weiHex) return "0";
+  try {
+    const wei = BigInt(weiHex);
+    const whole = wei / 1000000000000000000n;
+    const frac = (wei % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4);
+    return `${whole}.${frac}`;
+  } catch {
+    return "0";
   }
-  const bp = new ethers.BrowserProvider(eip1193);
-  return await bp.getSigner();
 }
 
 export default function Home() {
-  // --- connection (wagmi/AppKit) ---
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { data: walletClient } = useWalletClient();
+  const [address, setAddress] = useState(null);
+  const [wcProvider, setWcProvider] = useState(null);
+  const [chainId, setChainId] = useState(null);
+  const [balance, setBalance] = useState(null);
 
-  // CELO balance (on interroge directement la chain 42220)
-  const { data: celoBalance } = useBalance({
-    address,
-    chainId: CELO_CHAIN_ID,
-    query: { enabled: !!address },
-    watch: true,
-  });
+  const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "138901e6be32b5e78b59aa262e517fd0";
 
-  // thème & self modal
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // compteur tx L1/L2 (via /api/txcount)
+  // --- NEW: compteur de transactions L1/L2 ---
   const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
 
-  // daily check-in state
-  const [ciCount, setCiCount] = useState(null);
-  const [ciLast, setCiLast] = useState(null);
-  const [ciLeft, setCiLeft] = useState(null);
-  const [ciBusy, setCiBusy] = useState(false);
-  const [ciError, setCiError] = useState(null);
-
-  // ready() Mini App
   useEffect(() => { (async () => { try { await sdk.actions.ready(); } catch {} })(); }, []);
 
-  // thème persisted
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("celo-lite-theme");
     if (saved === "light" || saved === "dark" || saved === "auto") setTheme(saved);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("self") === "1") setOpenSelf(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -105,21 +74,122 @@ export default function Home() {
     else root.removeAttribute("data-theme");
     localStorage.setItem("celo-lite-theme", theme);
   }, [theme]);
-  const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
-  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
+
   function cycleTheme() {
     setTheme((t) => (t === "auto" ? "light" : t === "light" ? "dark" : "auto"));
   }
 
-  // open self modal via ?self=1
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const sp = new URLSearchParams(window.location.search);
-      if (sp.get("self") === "1") setOpenSelf(true);
+  async function refreshStatus(p = wcProvider, addr = address) {
+    if (!p || !addr) return;
+    try {
+      const [cid, bal] = await Promise.all([
+        p.request({ method: "eth_chainId" }),
+        p.request({ method: "eth_getBalance", params: [addr, "latest"] }),
+      ]);
+      setChainId(cid);
+      setBalance(bal);
+    } catch (e) {
+      console.error(e);
     }
-  }, []);
+  }
 
-  // fetch tx L1/L2 when address changes (cache 5 min)
+  async function ensureProvider() {
+    if (wcProvider) return wcProvider;
+
+    let EthereumProvider;
+    try {
+      EthereumProvider = await getEthereumProviderClass();
+      if (!EthereumProvider) throw new Error("EthereumProvider class missing");
+    } catch (e) {
+      alert("WalletConnect failed to load. Hard refresh (Ctrl/Cmd+Shift+R) and retry.");
+      return null;
+    }
+
+    const provider = await EthereumProvider.init({
+      projectId,
+      showQrModal: true,
+      chains: [CELO_CHAIN_ID],
+      methods: [
+        "eth_sendTransaction",
+        "personal_sign",
+        "eth_signTypedData",
+        "wallet_switchEthereumChain",
+        "wallet_addEthereumChain",
+      ],
+      events: ["accountsChanged", "chainChanged", "disconnect"],
+      metadata: {
+        name: "Celo Lite",
+        description: "Ecosystem · Staking · Governance",
+        url: typeof location !== "undefined" ? location.origin : "https://celo-lite.vercel.app",
+        icons: ["/icon.png"],
+      },
+    });
+
+    provider.on("accountsChanged", (accs) => {
+      const a = accs?.[0] || null;
+      setAddress(a);
+      if (a) refreshStatus(provider, a);
+      else setBalance(null);
+    });
+
+    provider.on("chainChanged", (cid) => {
+      setChainId(cid);
+      if (address) refreshStatus(provider, address);
+    });
+
+    provider.on("disconnect", () => {
+      setAddress(null);
+      setChainId(null);
+      setBalance(null);
+    });
+
+    setWcProvider(provider);
+    return provider;
+  }
+
+  async function connect() {
+    const provider = await ensureProvider();
+    if (!provider) return;
+    try {
+      await provider.connect();
+      const addr = provider.accounts?.[0] || null;
+      setAddress(addr);
+
+      const currentCid = provider.chainId || (await provider.request({ method: "eth_chainId" }));
+      setChainId(currentCid);
+
+      if (currentCid !== CELO_HEX) {
+        try {
+          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CELO_HEX }] });
+          setChainId(CELO_HEX);
+        } catch {
+          try {
+            await provider.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: CELO_HEX,
+                chainName: "Celo Mainnet",
+                rpcUrls: ["https://forno.celo.org", "https://rpc.ankr.com/celo"],
+                nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+                blockExplorerUrls: ["https://celoscan.io/"],
+              }],
+            });
+            setChainId(CELO_HEX);
+          } catch {}
+        }
+      }
+      await refreshStatus(provider, addr);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function disconnect() {
+    try { await wcProvider?.disconnect(); } catch {}
+    setAddress(null); setChainId(null); setBalance(null);
+  }
+
+  // --- NEW: charge le compteur L1/L2 quand l'adresse change (cache 5 min) ---
   useEffect(() => {
     (async () => {
       if (!address) { setTxCounts({ l1: null, l2: null }); return; }
@@ -157,87 +227,9 @@ export default function Home() {
     })();
   }, [address]);
 
-  // read check-in state (only on Celo)
-  const isOnCelo = chainId === CELO_CHAIN_ID;
-  const canUseCheckin = isConnected && isOnCelo && CHECKIN_ADDR;
-
-  async function loadCheckin() {
-    if (!address || !walletClient) return;
-    if (!isOnCelo) {
-      setCiError("Switch to Celo to use check-in.");
-      setCiCount(null); setCiLast(null); setCiLeft(null);
-      return;
-    }
-    try {
-      setCiError(null);
-      const signer = await getEthersSigner(walletClient);
-      const c = new ethers.Contract(CHECKIN_ADDR, DailyCheckinABI, signer);
-      const [cnt, last, left] = await Promise.all([
-        c.checkinCount(address),
-        c.lastCheckin(address),
-        c.timeUntilNext(address),
-      ]);
-      setCiCount(Number(cnt));
-      setCiLast(Number(last));
-      setCiLeft(Number(left));
-    } catch (e) {
-      console.error(e);
-      setCiError("Failed to read check-in.");
-    }
-  }
-
-  useEffect(() => {
-    if (address && walletClient) loadCheckin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, walletClient, isOnCelo]);
-
-  // write: check-in (user-pays)
-  async function doCheckin() {
-    try {
-      setCiBusy(true); setCiError(null);
-      if (!isOnCelo) {
-        // on propose un switch “doux” via EIP-1193 si possible
-        try {
-          const req = (walletClient?.transport?.request) || (typeof window !== "undefined" && window.ethereum?.request);
-          if (req) {
-            await req({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: "0xa4ec" /* 42220 */ }],
-            });
-          }
-        } catch (e) {
-          setCiBusy(false);
-          setCiError("Please switch to Celo Mainnet.");
-          return;
-        }
-      }
-      const signer = await getEthersSigner(walletClient);
-      const c = new ethers.Contract(CHECKIN_ADDR, DailyCheckinABI, signer);
-
-      const left = await c.timeUntilNext(address);
-      if (Number(left) > 0) {
-        setCiBusy(false);
-        setCiLeft(Number(left));
-        setCiError("Cooldown active.");
-        return;
-      }
-
-      const tx = await c.checkIn();
-      await tx.wait();
-      await loadCheckin();
-    } catch (e) {
-      console.error(e);
-      setCiError(e?.message || "Check-in failed.");
-    } finally {
-      setCiBusy(false);
-    }
-  }
-
-  const celoBalanceText = useMemo(() => {
-    if (!celoBalance) return "…";
-    // Exemple: "12.3456 CELO"
-    return `${Number(celoBalance.formatted).toFixed(4)} ${celoBalance.symbol || "CELO"}`;
-  }, [celoBalance]);
+  const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
+  const themeLabel = theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark";
+  const themeIcon = theme === "auto" ? "A" : theme === "light" ? "☀️" : "🌙";
 
   return (
     <>
@@ -307,8 +299,16 @@ export default function Home() {
             </a>
 
             <div className="actions">
-              {/* AppKit connect (Rabby/Farcaster/MM, etc.) */}
-              <AppKitConnect />
+              {address ? (
+                <div className="wallet-inline">
+                  <span className="addr">{short(address)}</span>
+                  <button className={BTN} onClick={disconnect}>Disconnect</button>
+                </div>
+              ) : (
+                <button className="wallet-cta" onClick={connect} title="Connect wallet">
+                  Connect Wallet
+                </button>
+              )}
 
               <a className="pill" href="https://warpcast.com/wenaltszn.eth" target="_blank" rel="noreferrer" title="Farcaster profile">
                 <img className="icon" src="/farcaster.png" alt="" />
@@ -330,15 +330,15 @@ export default function Home() {
           {/* Wallet */}
           <section className={CARD}>
             <h2>Wallet</h2>
-            {isConnected ? (
+            {address ? (
               <>
                 <p><b>{short(address)}</b></p>
-                <p className={isOnCelo ? "ok" : "warn"}>
-                  chain: {chainId ?? "-"} {isOnCelo ? "(celo)" : "(switch to Celo to stake/vote)"}
+                <p className={chainId === CELO_HEX ? "ok" : "warn"}>
+                  chain: {chainId || "-"} {chainId === CELO_HEX ? "(celo)" : "(switch to Celo to stake/vote)"}
                 </p>
-                <p>balance: {celoBalanceText}</p>
+                <p>balance: {balance ? `${formatCELO(balance)} CELO` : "…"}</p>
 
-                {/* transactions L1/L2 */}
+                {/* --- NEW: affichage compteur L1/L2 --- */}
                 <p>
                   {txLoading
                     ? "transactions: …"
@@ -348,32 +348,6 @@ export default function Home() {
                 </p>
                 {txError ? <p className="warn">{txError}</p> : null}
                 <p className="hint">L2 counted since {CELO_L2_START_LABEL}.</p>
-
-                {/* Daily check-in */}
-                {CHECKIN_ADDR ? (
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                    <button
-                      className={BTN}
-                      onClick={doCheckin}
-                      disabled={ciBusy || !isOnCelo || Number(ciLeft || 0) > 0}
-                      title={
-                        !isOnCelo
-                          ? "Switch to Celo to use check-in"
-                          : Number(ciLeft || 0) > 0
-                          ? `Cooldown: ${formatSecs(ciLeft)}`
-                          : "Daily check-in"
-                      }
-                    >
-                      {ciBusy ? "Checking-in…" : "Daily check-in"}
-                    </button>
-                    <div style={{ fontSize: 13, color: "var(--muted)", alignSelf: "center" }}>
-                      {ciError
-                        ? <span style={{ color: "#b91c1c", fontWeight: 600 }}>{ciError}</span>
-                        : <>total: {ciCount ?? "…"} · next: {ciLeft == null ? "…" : formatSecs(ciLeft)}</>
-                      }
-                    </div>
-                  </div>
-                ) : null}
               </>
             ) : (
               <p>Connect to show status.</p>
@@ -445,7 +419,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Footer */}
+          {/* Footer links */}
           <footer className="foot">
             <div className="social">
               <a className="icon-link" href="https://x.com/Celo" target="_blank" rel="noreferrer" title="@Celo on X">
@@ -476,7 +450,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -584,14 +558,33 @@ export default function Home() {
             grid-template-areas:
               "brand actions"
               "badge badge";
+            column-gap:8px;
             row-gap:8px;
           }
           .brand{ grid-area: brand; }
-          .actions{ grid-area: actions; justify-self:end; gap:8px; }
+          .actions{
+            grid-area: actions;
+            justify-self:end;
+            display:flex;
+            align-items:center;
+            gap:8px;
+            flex-wrap:wrap;           /* allow wrapping */
+            max-width:100%;
+          }
           .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
           h1{ font-size:22px; }
           .tagline{ font-size:12px; }
-          .pill{ min-width:auto; padding:0 10px; }
+
+          .pill{ min-width:auto; padding:0 10px; height:34px; }
+          .wallet-cta{ min-width:auto; padding:0 12px; height:36px; }
+
+          .wrap{ padding-left:12px; padding-right:12px; overflow-x:hidden; }
+        }
+
+        /* Extra-small phones: icon-only pills */
+        @media (max-width:480px){
+          .pill span{ display:none; }
+          .pill{ width:36px; padding:0; justify-content:center; }
         }
       `}</style>
     </>
