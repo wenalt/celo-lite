@@ -25,6 +25,9 @@ const CARD = "card";
 const CELO_CHAIN_ID = 42220;
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
+// NEW: Saison 1 (Prosperity Passport)
+const S1_START_LABEL = "23 Aug 2025";
+
 const CHECKIN_ADDR =
   process.env.NEXT_PUBLIC_CHECKIN_ADDRESS ||
   "0x8C654199617927a1F8218023D9c5bec42605a451";
@@ -77,8 +80,8 @@ export default function Home() {
   const [theme, setTheme] = useState("auto");
   const [openSelf, setOpenSelf] = useState(false);
 
-  // compteur tx L1/L2 (via /api/txcount)
-  const [txCounts, setTxCounts] = useState({ l1: null, l2: null });
+  // compteur tx L1/L2/S1 (via /api/txcount)
+  const [txCounts, setTxCounts] = useState({ l1: null, l2: null, s1: null });
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
 
@@ -119,20 +122,20 @@ export default function Home() {
     }
   }, []);
 
-  // fetch tx L1/L2 when address changes (cache 5 min)
+  // fetch tx L1/L2/S1 when address changes (cache 5 min)
   useEffect(() => {
     (async () => {
-      if (!address) { setTxCounts({ l1: null, l2: null }); return; }
+      if (!address) { setTxCounts({ l1: null, l2: null, s1: null }); return; }
       try {
         setTxError(null);
         setTxLoading(true);
 
-        const key = `txcounts:${address}`;
+        const key = `txcounts:v2:${address}`; // v2 => cache bust for S1 support
         const cached = typeof window !== "undefined" ? localStorage.getItem(key) : null;
         if (cached) {
-          const { at, l1, l2 } = JSON.parse(cached);
+          const { at, l1, l2, s1 } = JSON.parse(cached);
           if (Date.now() - at < 5 * 60 * 1000) {
-            setTxCounts({ l1, l2 });
+            setTxCounts({ l1, l2, s1 });
             setTxLoading(false);
             return;
           }
@@ -143,10 +146,12 @@ export default function Home() {
         const data = await res.json();
         const l1 = data.l1 ?? 0;
         const l2 = data.l2 ?? 0;
-        setTxCounts({ l1, l2 });
+        const s1 = data.s1 ?? 0; // NEW
+
+        setTxCounts({ l1, l2, s1 });
 
         if (typeof window !== "undefined") {
-          localStorage.setItem(key, JSON.stringify({ at: Date.now(), l1, l2 }));
+          localStorage.setItem(key, JSON.stringify({ at: Date.now(), l1, l2, s1 }));
         }
       } catch (e) {
         console.error(e);
@@ -188,7 +193,7 @@ export default function Home() {
 
   useEffect(() => {
     if (address && walletClient) loadCheckin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, walletClient, isOnCelo]);
 
   // write: check-in (user-pays)
@@ -235,7 +240,6 @@ export default function Home() {
 
   const celoBalanceText = useMemo(() => {
     if (!celoBalance) return "…";
-    // Exemple: "12.3456 CELO"
     return `${Number(celoBalance.formatted).toFixed(4)} ${celoBalance.symbol || "CELO"}`;
   }, [celoBalance]);
 
@@ -338,16 +342,18 @@ export default function Home() {
                 </p>
                 <p>balance: {celoBalanceText}</p>
 
-                {/* transactions L1/L2 */}
+                {/* transactions L1/L2/S1 */}
                 <p>
                   {txLoading
                     ? "transactions: …"
                     : txCounts.l1 == null
                       ? ""
-                      : `transactions: ${txCounts.l1} (L1) · ${txCounts.l2} (L2)`}
+                      : `transactions: ${txCounts.l1} (L1) · ${txCounts.l2} (L2) · ${txCounts.s1 ?? 0} (S1)`}
                 </p>
                 {txError ? <p className="warn">{txError}</p> : null}
-                <p className="hint">L2 counted since {CELO_L2_START_LABEL}.</p>
+                <p className="hint">
+                  L2 counted since {CELO_L2_START_LABEL}. S1 since {S1_START_LABEL}.
+                </p>
 
                 {/* Daily check-in */}
                 {CHECKIN_ADDR ? (
@@ -476,7 +482,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
