@@ -319,9 +319,10 @@ export default function Home() {
                 <span>@wenaltszn.eth</span>
               </a>
 
-              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="GitHub">
+              {/* GitHub → wenalt (titre + libellé) */}
+              <a className="pill" href="https://github.com/wenalt" target="_blank" rel="noreferrer" title="wenalt">
                 <img className="icon" src="/github.svg" alt="" />
-                <span>GitHub</span>
+                <span>wenalt</span>
               </a>
 
               <button className="pill" onClick={cycleTheme} title={`Theme: ${themeLabel}`}>
@@ -482,7 +483,7 @@ export default function Home() {
 
               <a className="icon-link" href="https://discord.gg/celo" target="_blank" rel="noreferrer" title="Celo Discord">
                 <svg width="22" height="22" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden>
-                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213.424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
+                  <path fill="#5865F2" d="M20.317 4.369A19.9 19.9 0 0 0 16.558 3c-.2.41-.42.94-.66 1.375a18.9 18.9 0 0 0-5.796 0C9.86 3.94 9.64 3.41 9.44 3A19.02 19.02 0 0 0 5.68 4.369C3.258 7.91 2.46 11.34 2.662 14.719A19.67 19.67 0 0 0 8 17c.35-.63.67-1.225 1.1-1.78a7.6 7.6 0 0 1-1.74-.85c.145-.104.287-.213 .424-.327 3.343 1.558 6.96 1.558 10.303 0 .138.114.28.223.424.327-.57.33-1.14.62-1.74.85.43.555.75 1.15 1.1 1.78a19.67 19.67 0 0 0 5.338-2.281c-.224-3.65-.584-7.08-3.008-10.531ZM9.5 13.5c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Zm5 0c-.83 0-1.5-.9-1.5-2s.67-2 1.5-2 1.5.9 1.5 2-.67 2-1.5 2Z"/>
                 </svg>
                 <span className="label">Discord</span>
               </a>
@@ -585,6 +586,9 @@ export default function Home() {
 
         /* Mobile layout */
         @media (max-width:640px){
+          /* empêcher le scroll horizontal (mobile only) */
+          html, body { overflow-x: hidden; }
+
           .topbar{
             grid-template-columns: 1fr 1fr;
             grid-template-areas:
@@ -597,7 +601,10 @@ export default function Home() {
           .centerBadge{ grid-area: badge; justify-self:center; margin-top:2px; }
           h1{ font-size:22px; }
           .tagline{ font-size:12px; }
-          .pill{ min-width:auto; padding:0 10px; }
+
+          /* pills du header : icônes uniquement */
+          .topbar .pill{ min-width:auto; width:40px; padding:0 8px; justify-content:center; }
+          .topbar .pill span:not(.emoji){ display:none; } /* garde l’emoji (thème), masque les textes */
         }
       `}</style>
     </>
