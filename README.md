@@ -115,7 +115,7 @@ We aim for:
 
 * Expand **concise explanations** for quests/badges and key sections.
 * Tighten **counter/check‑in** UX (clearer feedback, small rewards later if appropriate).
-* Continue polishing the **hub experience** (fast redirects, consistent copy).
+* Continue polishing the **hub experience** (fast redirects, consistent copy)
 
 > We’ll only announce features here once they’re actually live — staying humble and coherent with what the app delivers today.
 
