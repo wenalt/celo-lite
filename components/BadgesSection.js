@@ -45,7 +45,7 @@ const BADGES = [
     summary:
       "Retire Eco Credits on Celo via Regen Atlas. Purchases are retired (burned) permanently.",
     why:
-      "Retiring Eco Credits funds verified climate action and **permanently burns** those credits. ⚠️ This is **irreversible**: you buy credits with money and retire them to offset impact; they cannot be ‘un-retired’.",
+      "Retiring Eco Credits funds verified climate action and permanently burns those credits. ⚠️ This is irreversible: you buy credits with money and retire them to offset impact; they cannot be ‘un-retired’.",
     how: [
       "Open a supported Eco Credit pool on Regen Atlas.",
       "Connect your EVM wallet on Celo.",
@@ -70,7 +70,32 @@ const BADGES = [
       },
     ],
   },
+
+  // NEW — Self verification (Self Protocol)
+  {
+    id: "self-verification",
+    title: "Self verification",
+    chain: "Celo",
+    image: "/badges/badgeself.png", // ou "/badges/badgeselff.png"
+    summary: "Verify your uniqueness with the Self Protocol (privacy-preserving).",
+    why:
+      "Self uses zero-knowledge proofs to attest your uniqueness (and optionally your country) without exposing private data. This helps the ecosystem limit spam and strengthen on-chain reputation.",
+    how: [
+      "Install the Self app on your phone (Android/iOS).",
+      "In Celo Lite → Prosperity Passport, scan the QR to link your wallet.",
+      "Follow the flow in Self (liveness + optional country attestation).",
+      "Once validated, use “Self.xyz Verification” in Celo Lite.",
+    ],
+    tiers: [
+      { label: "Verify your Country via Self" },
+    ],
+    external: [
+      { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
+      { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
+    ],
+  },
 ];
+
 
 
 export default function BadgesSection() {
