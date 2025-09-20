@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { ethers } from "ethers";
+import BadgesSection from "../components/BadgesSection"; // ← NEW
 
 // wagmi (AppKit)
 import { useAccount, useChainId, useBalance, useWalletClient } from "wagmi";
@@ -437,6 +438,16 @@ export default function Home() {
             <div className="btns">
               <a className={BTN} href="https://app.layer3.xyz/search?chainIds=42220&types=current_season" target="_blank" rel="noreferrer">Open Layer3</a>
               <a className={BTN} href="https://gooddapp.org/#/claim" target="_blank" rel="noreferrer">Claim $G</a>
+            </div>
+          </section>
+
+          {/* Badges */}
+          <section className={CARD}>
+            <h2>Badges</h2>
+            <p>Short, Celo-aligned explanations so users understand the “why” and can act confidently.</p>
+            {/* Contenu in-app (images + details) piloté par BadgesSection */}
+            <div style={{ marginTop: 10 }}>
+              <BadgesSection />
             </div>
           </section>
 
