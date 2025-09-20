@@ -444,7 +444,7 @@ export default function Home() {
           {/* Badges */}
           <section className={CARD}>
             <h2>Badges</h2>
-            <p>Short, Celo-aligned explanations so users understand the “why” and can act confidently.</p>
+            <p>Short, Celo-aligned explanations to earn badges with confidence.</p>
             {/* Contenu in-app (images + details) piloté par BadgesSection */}
             <div style={{ marginTop: 10 }}>
               <BadgesSection />
