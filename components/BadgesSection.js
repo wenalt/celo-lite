@@ -1,18 +1,14 @@
 // components/BadgesSection.js
 import React, { useMemo, useState } from "react";
-import Image from "next/image";
 
 /**
- * Celo Lite — Badges Section (JS)
- * - Pas de titre/description internes (gérés par pages/index.js)
- * - Pas de filtres
- * - Mise en page centrée, boutons noirs via la classe globale `.btn`
- * - Modal centrée avec police légèrement plus grande
+ * Minimal, framework-safe version.
+ * - No styled-jsx
+ * - No next/image (plain <img/>)
+ * - Centered layout, uses global `.btn` for black buttons
+ * - Simple centered modal
  */
 
-// ----------------------
-// Content
-// ----------------------
 const BADGES = [
   {
     id: "usdglo",
@@ -49,90 +45,115 @@ export default function BadgesSection() {
     [data, openId]
   );
 
+  const wrap = {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+  };
+
+  const item = {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  };
+
+  const imgStyle = { borderRadius: 12, width: 64, height: 64, objectFit: "cover" };
+  const name = { margin: 0, fontSize: 16, fontWeight: 800 };
+  const chip = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "2px 8px",
+    borderRadius: 999,
+    border: "1px solid var(--ring)",
+    background: "var(--card)",
+    fontSize: 12,
+    marginLeft: 8,
+  };
+  const summary = { margin: "4px 0 0", color: "var(--muted)", fontSize: 14, textAlign: "center" };
+  const actions = { display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 8 };
+
+  const modalRoot = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 80,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  };
+  const backdrop = { position: "absolute", inset: 0, background: "rgba(0,0,0,.42)" };
+  const dialog = {
+    position: "relative",
+    width: "100%",
+    maxWidth: 680,
+    background: "var(--card)",
+    border: "1px solid var(--ring)",
+    borderRadius: 16,
+    boxShadow: "0 10px 30px rgba(0,0,0,.3)",
+  };
+  const dhead = { display: "flex", alignItems: "center", gap: 10, padding: "14px 16px 0" };
+  const dtitle = { margin: 0, fontSize: 18, fontWeight: 800 };
+  const closeBtn = { marginLeft: "auto", background: "transparent", border: 0, fontSize: 24, lineHeight: 1, cursor: "pointer", color: "inherit" };
+  const dbody = { padding: "12px 16px 16px", fontSize: 15, lineHeight: 1.55 };
+  const meta = { color: "var(--muted)", fontSize: 13 };
+
   return (
-    <div className="cl-badges">
-      <div className="cl-grid">
-        {data.map((b) => (
-          <div key={b.id} className="cl-item">
-            <Image
-              src={b.image}
-              alt={b.title}
-              width={64}
-              height={64}
-              className="cl-img"
-            />
-            <div className="cl-col">
-              <div className="cl-row">
-                <h3 className="cl-name">{b.title}</h3>
-                <span className="cl-chip">{b.chain}</span>
-              </div>
-              <p className="cl-summary">{b.summary}</p>
-              <div className="cl-actions">
-                <button className="btn" onClick={() => setOpenId(b.id)}>
-                  Details
-                </button>
-                {b.external?.map((x) => (
-                  <a
-                    key={x.href}
-                    className="btn"
-                    href={x.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {x.label}
-                  </a>
-                ))}
-              </div>
+    <div style={wrap}>
+      {data.map((b) => (
+        <div key={b.id} style={item}>
+          <img src={b.image} alt={b.title} style={imgStyle} />
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <h3 style={name}>{b.title}</h3>
+              <span style={chip}>{b.chain}</span>
+            </div>
+            <p style={summary}>{b.summary}</p>
+            <div style={actions}>
+              <button className="btn" onClick={() => setOpenId(b.id)}>Details</button>
+              {b.external?.map((x) => (
+                <a key={x.href} className="btn" href={x.href} target="_blank" rel="noreferrer">
+                  {x.label}
+                </a>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
-      {/* Centered modal */}
       {openSpec && (
-        <div className="cl-modal" role="dialog" aria-modal="true">
-          <div className="cl-backdrop" onClick={() => setOpenId(null)} />
-          <div className="cl-dialog">
-            <div className="cl-dhead">
-              <Image
-                src={openSpec.image}
-                alt=""
-                width={28}
-                height={28}
-                className="cl-icon"
-              />
-              <h4 className="cl-dtitle">{openSpec.title}</h4>
-              <button
-                className="cl-close"
-                onClick={() => setOpenId(null)}
-                aria-label="Close"
-              >
-                ×
-              </button>
+        <div style={modalRoot} role="dialog" aria-modal="true">
+          <div style={backdrop} onClick={() => setOpenId(null)} />
+          <div style={dialog}>
+            <div style={dhead}>
+              <img src={openSpec.image} alt="" width={28} height={28} style={{ borderRadius: 8 }} />
+              <h4 style={dtitle}>{openSpec.title}</h4>
+              <button style={closeBtn} onClick={() => setOpenId(null)} aria-label="Close">×</button>
             </div>
-            <div className="cl-dbody">
-              <div className="cl-meta">Chain: {openSpec.chain}</div>
+            <div style={dbody}>
+              <div style={meta}>Chain: {openSpec.chain}</div>
               <section>
-                <h5>Why it matters</h5>
-                <p>{openSpec.why}</p>
+                <h5 style={{ margin: "12px 0 6px", fontSize: 15 }}>Why it matters</h5>
+                <p style={{ margin: 0 }}>{openSpec.why}</p>
               </section>
               <section>
-                <h5>How to progress</h5>
-                <ul>
-                  {openSpec.how.map((li, i) => (
-                    <li key={i}>{li}</li>
-                  ))}
+                <h5 style={{ margin: "12px 0 6px", fontSize: 15 }}>How to progress</h5>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {openSpec.how.map((li, i) => <li key={i}>{li}</li>)}
                 </ul>
               </section>
               {openSpec.tiers && (
                 <section>
-                  <h5>Tiers</h5>
-                  <ul className="cl-tiers">
+                  <h5 style={{ margin: "12px 0 6px", fontSize: 15 }}>Tiers</h5>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {openSpec.tiers.map((t, i) => (
-                      <li key={i}>
-                        <span className="dot" />
-                        {t.label}
-                        {t.hint && <span className="hint"> – {t.hint}</span>}
+                      <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, margin: "6px 0" }}>
+                        <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 999, background: "currentColor", opacity: .75 }} />
+                        <span>{t.label}{t.hint ? <span style={{ color: "var(--muted)", fontSize: 12 }}> – {t.hint}</span> : null}</span>
                       </li>
                     ))}
                   </ul>
@@ -140,175 +161,18 @@ export default function BadgesSection() {
               )}
               {openSpec.external && openSpec.external.length > 0 && (
                 <section>
-                  <h5>Links</h5>
-                  <div className="cl-links">
+                  <h5 style={{ margin: "12px 0 6px", fontSize: 15 }}>Links</h5>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                     {openSpec.external.map((x) => (
-                      <a
-                        key={x.href}
-                        className="btn"
-                        href={x.href}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {x.label}
-                      </a>
+                      <a key={x.href} className="btn" href={x.href} target="_blank" rel="noreferrer">{x.label}</a>
                     ))}
                   </div>
                 </section>
               )}
             </div>
           </div>
-
-          <style jsx>{`
-            .cl-modal {
-              position: fixed;
-              inset: 0;
-              z-index: 80;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 16px;
-            }
-            .cl-backdrop {
-              position: absolute;
-              inset: 0;
-              background: rgba(0, 0, 0, 0.42);
-            }
-            .cl-dialog {
-              position: relative;
-              width: 100%;
-              max-width: 680px;
-              background: var(--card);
-              border: 1px solid var(--ring);
-              border-radius: 16px;
-              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            }
-            .cl-dhead {
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              padding: 14px 16px 0;
-            }
-            .cl-icon {
-              border-radius: 8px;
-            }
-            .cl-dtitle {
-              margin: 0;
-              font-size: 18px;
-              font-weight: 800;
-            }
-            .cl-close {
-              margin-left: auto;
-              background: transparent;
-              border: 0;
-              font-size: 24px;
-              line-height: 1;
-              cursor: pointer;
-              color: inherit;
-            }
-            .cl-dbody {
-              padding: 12px 16px 16px;
-              font-size: 15px;
-              line-height: 1.55;
-            }
-            .cl-dbody h5 {
-              margin: 12px 0 6px;
-              font-size: 15px;
-            }
-            .cl-meta {
-              color: var(--muted);
-              font-size: 13px;
-            }
-            .cl-tiers {
-              list-style: none;
-              padding: 0;
-              margin: 0;
-            }
-            .cl-tiers li {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              margin: 6px 0;
-            }
-            .cl-tiers .dot {
-              display: inline-block;
-              width: 6px;
-              height: 6px;
-              border-radius: 999px;
-              background: currentColor;
-              opacity: 0.75;
-            }
-            .hint {
-              color: var(--muted);
-              font-size: 12px;
-            }
-            .cl-links {
-              display: flex;
-              gap: 8px;
-              flex-wrap: wrap;
-              margin-top: 6px;
-            }
-          `}</style>
         </div>
       )}
-
-      <style jsx>{`
-        .cl-badges {
-          width: 100%;
-        }
-        .cl-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          align-items: center;
-        }
-        .cl-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          justify-content: center;
-          flex-wrap: wrap;
-          width: 100%;
-        }
-        .cl-img {
-          border-radius: 12px;
-        }
-        .cl-col {
-          max-width: 640px;
-        }
-        .cl-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          justify-content: center;
-        }
-        .cl-name {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 800;
-        }
-        .cl-chip {
-          display: inline-flex;
-          align-items: center;
-          padding: 2px 8px;
-          border-radius: 999px;
-          border: 1px solid var(--ring);
-          background: var(--card);
-          font-size: 12px;
-        }
-        .cl-summary {
-          margin: 4px 0 0;
-          color: var(--muted);
-          font-size: 14px;
-        }
-        .cl-actions {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          justify-content: center;
-          margin-top: 8px;
-        }
-      `}</style>
     </div>
   );
 }
