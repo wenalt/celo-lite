@@ -152,7 +152,36 @@ const BADGES = [
       { label: "Open Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
     ],
   },
+
+  // NEW — Proof of Ship
+  {
+    id: "proof-of-ship",
+    title: "Proof of Ship",
+    chain: "Celo",
+    image: "/badges/posbadge.png",
+    summary: "Earn cUSD by shipping public work and logging it through the Proof of Ship flow.",
+    why:
+      "Proof of Ship rewards builders for shipping public work aligned with Celo. Earnings are paid in cUSD and reflect consistent delivery, helping you build a verifiable on-chain track record.",
+    how: [
+      "Read how the integration works.",
+      "Open the Celo Proof of Ship program page.",
+      "Ship publicly (code, product, tutorial, integration) and submit according to the program instructions.",
+      "Connect your wallet and claim eligible rewards in cUSD when your ship is approved.",
+    ],
+    tiers: [
+      { label: "Earn 100 cUSD or more" },
+      { label: "Earn 250 cUSD or more" },
+      { label: "Earn 500 cUSD or more" },
+      { label: "Earn 750 cUSD or more" },
+      { label: "Earn 1000 cUSD or more" },
+    ],
+    external: [
+      { label: "How it works (Docs)", href: "https://docs.gap.karmahq.xyz/how-to-guides/integrations/celo-proof-of-ship" },
+      { label: "Program page", href: "https://www.celopg.eco/programs/proof-of-ship-s1" },
+    ],
+  },
 ];
+
 
 
 
