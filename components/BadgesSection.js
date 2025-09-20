@@ -124,7 +124,36 @@ const BADGES = [
       { label: "Open Mondo Governance", href: "https://mondo.celo.org/governance" },
     ],
   },
+
+  // NEW — Community Guild Member
+  {
+    id: "community-guild-member",
+    title: "Community Guild Member",
+    chain: "Celo",
+    image: "/badges/comgmember.png",
+    summary:
+      "Earn Discord roles in the Celo Communities Guild through organic participation.",
+    why:
+      "Guild roles reflect real community engagement (helping others, sharing updates, joining calls). Earning roles builds reputation and connects you with builders and programs across the Celo ecosystem.",
+    how: [
+      "Open the Celo Communities Guild and connect your Discord account.",
+      "Join the Celo Discord and participate organically (help, updates, events).",
+      "Complete the role requirements listed in Guild to level up.",
+      "Claim your role in Guild once criteria are met.",
+    ],
+    tiers: [
+      { label: "Beginner Celorian" },
+      { label: "Adventurer Celorian" },
+      { label: "Vanguard Celorian" },
+      { label: "Pioneer Celorian" },
+      { label: "Champion Celorian" },
+    ],
+    external: [
+      { label: "Open Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+    ],
+  },
 ];
+
 
 
 
