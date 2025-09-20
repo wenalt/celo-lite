@@ -86,15 +86,46 @@ const BADGES = [
       "Follow the flow in Self (liveness + optional country attestation).",
       "Once validated, use “Self.xyz Verification” in Celo Lite.",
     ],
+    tiers: [{ label: "Verify your Country via Self" }],
+    external: [
+      {
+        label: "Self on Android",
+        href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp",
+      },
+      {
+        label: "Self on iOS",
+        href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710",
+      },
+    ],
+  },
+
+  // NEW — Celo Voter
+  {
+    id: "celo-voter",
+    title: "Celo Voter",
+    chain: "Celo",
+    image: "/badges/celovoterbadge.png",
+    summary: "Vote on on-chain governance proposals via Mondo.",
+    why:
+      "Voting steers protocol parameters and treasury. Casting votes with locked/staked CELO builds a credible on-chain civic footprint and helps align the network with its community.",
+    how: [
+      "Open the governance portal (Mondo) and connect your wallet on Celo Mainnet.",
+      "Ensure you have voting power (lock/stake CELO on a validator via Mondo).",
+      "Pick an active proposal, review details, choose For / Against / Abstain.",
+      "Submit the vote and sign the transaction. Your vote will appear on the proposal page/explorer.",
+    ],
     tiers: [
-      { label: "Verify your Country via Self" },
+      { label: "Vote on 1 Celo Proposal" },
+      { label: "Vote on 5 Celo Proposal" },
+      { label: "Vote on 15 Celo Proposal" },
+      { label: "Vote on 30 Celo Proposal" },
     ],
     external: [
-      { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
-      { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
+      { label: "Open Mondo Governance", href: "https://mondo.celo.org/governance" },
     ],
   },
 ];
+
 
 
 
