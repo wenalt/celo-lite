@@ -35,7 +35,43 @@ const BADGES = [
       { label: "Open CeloPG", href: "https://celopg.eco" },
     ],
   },
+
+  // NEW — Eco Credit Retirement (Regen Atlas)
+  {
+    id: "eco-credit-retirement",
+    title: "Eco Credit Retirement",
+    chain: "Celo",
+    image: "/badges/badgeecr.png",
+    summary:
+      "Retire Eco Credits on Celo via Regen Atlas. Purchases are retired (burned) permanently.",
+    why:
+      "Retiring Eco Credits funds verified climate action and **permanently burns** those credits. ⚠️ This is **irreversible**: you buy credits with money and retire them to offset impact; they cannot be ‘un-retired’.",
+    how: [
+      "Open a supported Eco Credit pool on Regen Atlas.",
+      "Connect your EVM wallet on Celo.",
+      "Choose the quantity to retire and confirm the transaction.",
+      "Wait for confirmation; your retirement receipt will be visible in-app/explorer.",
+    ],
+    tiers: [
+      { label: "Retire 1 Eco Credits" },
+      { label: "Retire 10 Eco Credits" },
+      { label: "Retire 50 Eco Credits" },
+      { label: "Retire 250 Eco Credits" },
+      { label: "Retire 1000 Eco Credits" },
+    ],
+    external: [
+      {
+        label: "Regen Atlas — Pool A",
+        href: "https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548",
+      },
+      {
+        label: "Regen Atlas — Pool B",
+        href: "https://www.regenatlas.xyz/assets/d4a3e607-7bd5-49b0-a4ef-4715c2fe65d4",
+      },
+    ],
+  },
 ];
+
 
 export default function BadgesSection() {
   const data = useMemo(() => BADGES, []);
