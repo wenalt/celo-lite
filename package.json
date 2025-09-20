@@ -26,9 +26,12 @@
     "@farcaster/miniapp-sdk": "latest",
     "@selfxyz/core": "*",
     "@selfxyz/qrcode": "*",
-    "ethers": "*"
+    "ethers": "*",
+
+    "@vercel/analytics": "^1.2.2"
   }
 }
+
 
 
 
