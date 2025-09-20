@@ -460,6 +460,7 @@ export default function Home() {
               <a className={BTN} href="https://www.celopg.eco/programs/proof-of-ship-s1" target="_blank" rel="noreferrer">Proof Of Ship</a>
               <a className={BTN} href="https://www.celopg.eco/programs/proof-of-impact-s1" target="_blank" rel="noreferrer">Proof Of Impact</a>
               <a className={BTN} href="https://www.celopg.eco/programs/supportstreams1" target="_blank" rel="noreferrer">Support Streams</a>
+              <a className={BTN} href="https://www.celopg.eco/programs/prezenti-peach-round" target="_blank" rel="noreferrer">Prezenti Peach Round</a>
             </div>
           </section>
 
