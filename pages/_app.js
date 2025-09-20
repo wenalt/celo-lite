@@ -8,6 +8,9 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 // ✅ Réseaux AppKit (inclut Celo)
 import { celo } from "@reown/appkit/networks";
 
+// ✅ Vercel Analytics
+import { Analytics } from "@vercel/analytics/react";
+
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
 // Métadonnées pour WalletConnect/AppKit
@@ -44,6 +47,8 @@ export default function App({ Component, pageProps }) {
     <QueryClientProvider client={queryClient}>
       <WagmiConfig config={wagmiAdapter.wagmiConfig}>
         <Component {...pageProps} />
+        {/* Analytics: pageviews automatiques */}
+        <Analytics />
       </WagmiConfig>
     </QueryClientProvider>
   );
