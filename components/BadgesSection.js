@@ -487,18 +487,18 @@ const BADGES = [
     title: "CeloPG Steward",
     chain: "Celo",
     image: "/badges/cpgstewardbadge.png",
-    summary: "Part of the CeloPG Steward list (community steward/moderator role).",
+    summary: "Part of the CeloPG Steward list (community steward role).",
     why:
-      "CeloPG Stewards help coordinate programs, support builders, and keep the community safe and active. This badge recognizes approved stewards; it isn’t an open application.",
+      "CeloPG Stewards support the Prosperity Guild’s programs and community ops. This badge recognizes approved stewards; it’s not a general-access sign-up.",
     how: [
-      "Contribute consistently within CeloPG programs and community channels.",
-      "If selected by admins, your wallet is added to the steward list.",
-      "Once listed, the badge appears automatically in your Passport.",
+      "Contribute actively to CeloPG programs and community operations.",
+      "Be nominated/approved by CeloPG program admins as a Steward.",
+      "Once approved and listed, the badge appears in your Passport.",
     ],
     tiers: [{ label: "Become a CeloPG Steward" }],
     external: [
-      { label: "CeloPG", href: "https://celopg.eco" },
       { label: "Celo Discord", href: "https://discord.gg/celo" },
+      { label: "CeloPG", href: "https://celopg.eco" },
     ],
   },
 
@@ -508,13 +508,12 @@ const BADGES = [
     title: "Celo Event POAPs",
     chain: "Celo",
     image: "/badges/ceventpoapbadge.png",
-    summary: "Total number of Celo Event POAPs via Lemonade Social.",
+    summary: "Total number of Celo Event POAPs via Lemonade Social. (Appears to be paused.)",
     why:
-      "POAPs commemorate attendance at Celo events and meetups. Availability depends on event organizers and may be paused at times; previously issued POAPs still count toward your total.",
+      "Tracks historical attendance at Celo events that issued POAPs. Recent activity seems limited; treat this as a past-participation badge.",
     how: [
-      "Open the Celo space on Lemonade Social.",
-      "Connect your wallet and look for eligible Celo event POAPs.",
-      "Claim POAPs when available; your running total updates as you collect.",
+      "If your wallet has Celo event POAPs, connect to have them counted.",
+      "Tiers reflect cumulative POAPs across eligible Celo events.",
     ],
     tiers: [
       { label: "Claimed 1 Celo POAPs" },
@@ -527,7 +526,33 @@ const BADGES = [
       { label: "Lemonade Social — Celo", href: "https://lemonade.social/s/celo" },
     ],
   },
+
+  // NEW — Celo Citizen (historical)
+  {
+    id: "celo-citizen",
+    title: "Celo Citizen",
+    chain: "Celo",
+    image: "/badges/citizenbadge.png",
+    summary: "Receive rewards from Celo Citizen Retro 2024 (historical program).",
+    why:
+      "Celo Citizen Retro 2024 rewarded impactful contributors with CELO. This badge records amounts received; the program is closed and serves as proof of past participation.",
+    how: [
+      "If you received Retro 2024 rewards, connect your wallet to have them detected automatically.",
+      "Your total rewards determine the tier shown; no additional action is required.",
+    ],
+    tiers: [
+      { label: "Receive 100 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 1000 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 2500 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 5000 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 10000 CELO from Celo Citizen Retro 2024" },
+    ],
+    external: [
+      { label: "About Celo Citizen Retro 2024", href: "https://www.celopg.eco/insights/announcing-celo-citizen-retro-24" },
+    ],
+  },
 ];
+
 
 
 
