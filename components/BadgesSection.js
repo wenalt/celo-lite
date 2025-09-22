@@ -354,7 +354,33 @@ const BADGES = [
     tiers: [{ label: "Link your Farcaster account" }],
     external: [{ label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" }],
   },
+
+  // NEW — CEL1 Transactions
+  {
+    id: "cel1-transactions",
+    title: "CEL1 Transactions",
+    chain: "Celo",
+    image: "/badges/cel1txbadge.png",
+    summary:
+      "Number of transactions on the former Celo L1 network (historical activity prior to CEL2).",
+    why:
+      "This badge reflects your footprint on the original Celo L1 before the move to CEL2. It’s a snapshot of legacy activity that showcases long-time participation in the ecosystem.",
+    how: [
+      "Connect your wallet in Celo Lite / Prosperity Passport.",
+      "Your historical L1 transaction count is detected automatically.",
+      "The corresponding tier is displayed; no extra action is required.",
+    ],
+    tiers: [
+      { label: "10 transactions on the old Celo network" },
+      { label: "50 transactions on the old Celo network" },
+      { label: "100 transactions on the old Celo network" },
+      { label: "250 transactions on the old Celo network" },
+      { label: "500 transactions on the old Celo network" },
+    ],
+    external: [],
+  },
 ];
+
 
 
 
