@@ -268,7 +268,7 @@ const BADGES = [
     image: "/badges/gtcdonorbadge.png",
     summary: "Donate on Gitcoin using Celo to support public goods.",
     why:
-      "Gitcoin funding supports builders and public goods across the ecosystem. ⚠️ Donations use real funds and are generally non-refundable.",
+      "Gitcoin funding supports builders and public goods across the ecosystem. ⚠ Donations use real funds and are generally non-refundable.",
     how: [
       "Open Gitcoin Grants and connect your wallet.",
       "Choose a grantee and select Celo if available (or bridge if needed).",
@@ -294,7 +294,7 @@ const BADGES = [
     image: "/badges/givethdonorbadge.png",
     summary: "Donate on Giveth using Celo to support public goods & communities.",
     why:
-      "Giveth channels donations directly to projects. ⚠️ Donations sont des fonds réels et sont en général non-remboursables.",
+      "Giveth channels donations directly to projects. ⚠ Donations use real funds and are generally non-refundable.",
     how: [
       "Open Giveth projects filtered for Celo.",
       "Pick a project, connect your wallet, and select Celo if needed.",
