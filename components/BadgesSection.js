@@ -180,7 +180,35 @@ const BADGES = [
       { label: "Program page", href: "https://www.celopg.eco/programs/proof-of-ship-s1" },
     ],
   },
+
+  // NEW — CEL2 Transactions
+  {
+    id: "cel2-transactions",
+    title: "CEL2 Transactions",
+    chain: "Celo",
+    image: "/badges/cel2txbadge.png",
+    summary:
+      "Make transactions on CEL2. The Daily check-in gives you one free tx per day.",
+    why:
+      "CEL2 is Celo’s L2. Regular usage decentralizes activity and builds your on-chain footprint. With the free Daily check-in you can interact at zero gas once per day — steady progress, no friction.",
+    how: [
+      "Connect your wallet on Celo Mainnet (CEL2).",
+      "Use the Daily check-in button in Celo Lite (1 free tx/day).",
+      "Do organic actions on CEL2 (governance, apps, transfers) to climb tiers.",
+    ],
+    tiers: [
+      { label: "10 transactions on CEL2" },
+      { label: "50 transactions on CEL2" },
+      { label: "100 transactions on CEL2" },
+      { label: "250 transactions on CEL2" },
+      { label: "500 transactions on CEL2" },
+    ],
+    external: [
+      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220&types=current_season" },
+    ],
+  },
 ];
+
 
 
 
