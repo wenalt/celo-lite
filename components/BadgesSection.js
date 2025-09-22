@@ -418,7 +418,29 @@ const BADGES = [
       { label: "About GreenPill", href: "https://www.superchain.eco/projects/green-pill" }, // NEW
     ],
   },
+
+  // NEW — Regional DAO Lead
+  {
+    id: "regional-dao-lead",
+    title: "Regional DAO Lead",
+    chain: "Celo",
+    image: "/badges/regionaldaoleadbadge.png",
+    summary: "Part of the Celo Regional DAO Steward list (by nomination/selection).",
+    why:
+      "Regional DAO Leads coordinate local communities, events, and programs. This badge recognizes approved stewards; it’s not a general-access application.",
+    how: [
+      "Be active in your local Celo community (events, education, coordination).",
+      "If your region runs a steward process, you may be nominated/approved by program admins.",
+      "Once approved, your wallet/address is added to the steward list and reflected as a badge.",
+    ],
+    tiers: [{ label: "Become a Celo Regional DAO Lead" }],
+    external: [
+      { label: "Celo Discord (communities)", href: "https://discord.gg/celo" },
+      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+    ],
+  },
 ];
+
 
 
 
