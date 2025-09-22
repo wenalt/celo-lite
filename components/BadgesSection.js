@@ -285,7 +285,34 @@ const BADGES = [
       { label: "Open Gitcoin Grants", href: "https://grants.gitcoin.co/" },
     ],
   },
+
+  // NEW — Giveth Donor
+  {
+    id: "giveth-donor",
+    title: "Giveth Donor",
+    chain: "Celo",
+    image: "/badges/givethdonorbadge.png",
+    summary: "Donate on Giveth using Celo to support public goods & communities.",
+    why:
+      "Giveth channels donations directly to projects. ⚠️ Donations sont des fonds réels et sont en général non-remboursables.",
+    how: [
+      "Open Giveth projects filtered for Celo.",
+      "Pick a project, connect your wallet, and select Celo if needed.",
+      "Confirm the donation transaction.",
+      "Optionally keep your receipt/tx hash for your records.",
+    ],
+    tiers: [
+      { label: "Donate $25 more on Giveth" },
+      { label: "Donate $100 more on Giveth" },
+      { label: "Donate $250 more on Giveth" },
+      { label: "Donate $1000 more on Giveth" },
+    ],
+    external: [
+      { label: "Open Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
+    ],
+  },
 ];
+
 
 
 
