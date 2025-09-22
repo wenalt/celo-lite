@@ -204,7 +204,7 @@ const BADGES = [
       { label: "500 transactions on CEL2" },
     ],
     external: [
-      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220&types=current_season" },
+      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220" },
     ],
   },
 
@@ -234,7 +234,33 @@ const BADGES = [
       { label: "Open Talent Protocol", href: "https://app.talentprotocol.com/" },
     ],
   },
+
+  // NEW — S1 Transactions (Season 1)
+  {
+    id: "s1-transactions",
+    title: "S1 Transactions",
+    chain: "Celo",
+    image: "/badges/s1txsbadge.png",
+    summary:
+      "Number of transactions on Celo in Season 1 (since 23 Aug 2025; ends in ~93 days). Celo Lite shows your S1 counter (CEL1/CEL2/S1) to track progress.",
+    why:
+      "Season 1 highlights consistent on-chain activity in a defined window. Tracking S1 transactions helps you pace your engagement and unlock tiers during the season.",
+    how: [
+      "Connect your wallet in Celo Lite to display your S1 transaction counter.",
+      "Use Daily check-in (free tx/day) and interact organically across the ecosystem.",
+      "Keep an eye on your S1 total in the Wallet card (CEL1/CEL2/S1).",
+    ],
+    tiers: [
+      { label: "10 transactions on Celo in Season 1" },
+      { label: "50 transactions on Celo in Season 1" },
+      { label: "100 transactions on Celo in Season 1" },
+      { label: "250 transactions on Celo in Season 1" },
+      { label: "500 transactions on Celo in Season 1" },
+    ],
+    external: [],
+  },
 ];
+
 
 
 
