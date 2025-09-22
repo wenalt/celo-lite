@@ -460,7 +460,28 @@ const BADGES = [
       { label: "Celo Discord", href: "https://discord.gg/celo" },
     ],
   },
+
+  // NEW — Governance Guardian
+  {
+    id: "governance-guardian",
+    title: "Governance Guardian",
+    chain: "Celo",
+    image: "/badges/ggbadge.png",
+    summary: "Issued to recognized Celo Governance Guardians.",
+    why:
+      "Governance Guardians provide an additional safeguard for the protocol and help maintain process integrity. This badge is granted to approved guardians; it’s not a general application track.",
+    how: [
+      "Be selected/approved as a Governance Guardian through the program’s governance process.",
+      "Your address is added to the official guardian list.",
+      "Once listed, the badge is reflected automatically in your Passport.",
+    ],
+    tiers: [{ label: "Be a Celo Guardian" }],
+    external: [
+      { label: "Mondo Governance", href: "https://mondo.celo.org/governance" },
+    ],
+  },
 ];
+
 
 
 
