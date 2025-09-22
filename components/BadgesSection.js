@@ -551,7 +551,35 @@ const BADGES = [
       { label: "About Celo Citizen Retro 2024", href: "https://www.celopg.eco/insights/announcing-celo-citizen-retro-24" },
     ],
   },
+
+  // NEW — TDF Contributor
+  {
+    id: "tdf-contributor",
+    title: "TDF Contributor",
+    chain: "Celo",
+    image: "/badges/tdfbadge.png",
+    summary: "Participated in The Dream Factory land project (eligibility may be limited).",
+    why:
+      "Traditional Dream Factory (TDF) is a web3-enabled regenerative village/DAO in Portugal. This badge recognizes wallets that participated in the TDF land project or were added by program admins.",
+    how: [
+      "If sign-ups are open, follow the TDF flow and connect your wallet.",
+      "Otherwise, participation is recognized when program admins add your address.",
+      "Once your wallet is listed, the badge will appear automatically.",
+    ],
+    tiers: [
+      { label: "TDF Contributor — Level 1" },
+      { label: "TDF Contributor — Level 2" },
+      { label: "TDF Contributor — Level 3" },
+      { label: "TDF Contributor — Level 4" },
+      { label: "TDF Contributor — Level 5" },
+    ],
+    external: [
+      { label: "TDF — Signup (may be closed)", href: "https://www.traditionaldreamfactory.com/signup" },
+      { label: "Oasa / TDF Whitepaper", href: "https://oasa.earth/papers/OASA-Whitepaper-V1.2.pdf" },
+    ],
+  },
 ];
+
 
 
 
