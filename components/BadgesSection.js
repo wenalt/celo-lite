@@ -311,7 +311,32 @@ const BADGES = [
       { label: "Open Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
     ],
   },
+
+  // NEW — Celo Genesis
+  {
+    id: "celo-genesis",
+    title: "Celo Genesis",
+    chain: "Celo",
+    image: "/badges/celogenesisbadge.png",
+    summary: "Recognition based on the year your Celo wallet was created.",
+    why:
+      "Genesis reflects when you first joined the Celo network. Earlier creation dates signal long-term participation; newer dates welcome fresh builders to the ecosystem.",
+    how: [
+      "Connect your wallet in Celo Lite.",
+      "Your wallet’s creation/first-activity year is detected automatically.",
+      "The corresponding tier is shown; no extra action required.",
+    ],
+    tiers: [
+      { label: "Wallet created in the year 2024" },
+      { label: "Wallet created in the year 2023" },
+      { label: "Wallet created in the year 2022" },
+      { label: "Wallet created in the year 2021" },
+      { label: "Wallet created in the year 2020" },
+    ],
+    external: [],
+  },
 ];
+
 
 
 
