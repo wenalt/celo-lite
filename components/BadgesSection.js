@@ -439,7 +439,29 @@ const BADGES = [
       { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
     ],
   },
+
+  // NEW — Community Guild Lead
+  {
+    id: "community-guild-lead",
+    title: "Community Guild Lead",
+    chain: "Celo",
+    image: "/badges/cogbadge.png",
+    summary: "Issued to Celo Community Guild Leads.",
+    why:
+      "Reserved for approved moderators/leads who coordinate community efforts. It recognizes trusted stewards rather than being an open application badge.",
+    how: [
+      "Be an active moderator or community organizer within the Celo ecosystem.",
+      "Get nominated/approved by Community Guild admins/moderators.",
+      "Once your wallet is added to the official leads list, the badge appears automatically.",
+    ],
+    tiers: [{ label: "Be a Community Guild Lead" }],
+    external: [
+      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+      { label: "Celo Discord", href: "https://discord.gg/celo" },
+    ],
+  },
 ];
+
 
 
 
