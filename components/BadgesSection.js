@@ -480,7 +480,29 @@ const BADGES = [
       { label: "Mondo Governance", href: "https://mondo.celo.org/governance" },
     ],
   },
+
+  // NEW — CeloPG Steward
+  {
+    id: "celopg-steward",
+    title: "CeloPG Steward",
+    chain: "Celo",
+    image: "/badges/cpgstewardbadge.png",
+    summary: "Part of CeloPG Steward List.",
+    why:
+      "CeloPG Stewards help coordinate Passport/program operations and community support. This badge recognizes designated stewards; it’s not a public application track.",
+    how: [
+      "Contribute to CeloPG initiatives (support, education, coordination).",
+      "If selected by program admins, your address is added to the steward list.",
+      "Once listed, the badge will appear automatically in Passport.",
+    ],
+    tiers: [{ label: "Become a CeloPG Steward" }],
+    external: [
+      { label: "CeloPG", href: "https://celopg.eco" },
+      { label: "Celo Discord", href: "https://discord.gg/celo" },
+    ],
+  },
 ];
+
 
 
 
