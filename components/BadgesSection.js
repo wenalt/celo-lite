@@ -578,19 +578,30 @@ const BADGES = [
       { label: "Oasa / TDF Whitepaper", href: "https://oasa.earth/papers/OASA-Whitepaper-V1.2.pdf" },
     ],
   },
+
+  // NEW — S0 Gov Contributor (historical)
+  {
+    id: "s0-gov-contributor",
+    title: "S0 Gov Contributor",
+    chain: "Celo",
+    image: "/badges/s0govbadge.png",
+    summary: "Contributed to Celo Governance in Season 0 (counted via CeloPG Passport).",
+    why:
+      "Recognizes wallets that participated in governance during Season 0 tracked by CeloPG Passport. Historical badge; not an ongoing application.",
+    how: [
+      "Connect your wallet; eligible Season 0 governance contributions are detected automatically.",
+      "No new action required if your S0 votes/interactions were counted.",
+    ],
+    tiers: [
+      { label: "Contributed to Celo Governance in Season 0" },
+      { label: "Contributed to Celo Governance in Season 0" },
+    ],
+    external: [
+      { label: "Open CeloPG", href: "https://celopg.eco" },
+      { label: "Open CeloPG Passport", href: "https://pass.celopg.eco" },
+    ],
+  },
 ];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
