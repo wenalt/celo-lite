@@ -207,7 +207,35 @@ const BADGES = [
       { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220&types=current_season" },
     ],
   },
+
+  // NEW — Talent Protocol / Builder Score
+  {
+    id: "talent-protocol-score",
+    title: "Builder Score",
+    chain: "Celo",
+    image: "/badges/talentscorebadge.png",
+    summary:
+      "Increase your Talent Protocol Builder Score to signal reputation across the ecosystem.",
+    why:
+      "The Builder Score reflects sustained, verifiable builder activity (profile completeness, contributions, participation). A higher score helps showcase credibility and unlock opportunities.",
+    how: [
+      "Create or sign in to your Talent Protocol profile.",
+      "Connect your wallet and complete your builder profile.",
+      "Link your work and contributions (projects, repos, posts).",
+      "Stay active: ship, document, and keep your profile updated to grow your score.",
+    ],
+    tiers: [
+      { label: "Have a Builder score above 20" },
+      { label: "Have a Builder score above 40" },
+      { label: "Have a Builder score above 60" },
+      { label: "Have a Builder score above 80" },
+    ],
+    external: [
+      { label: "Open Talent Protocol", href: "https://app.talentprotocol.com/" },
+    ],
+  },
 ];
+
 
 
 
