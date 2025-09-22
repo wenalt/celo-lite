@@ -10,84 +10,7 @@ import React, { useMemo, useState } from "react";
  */
 
 const BADGES = [
-  {
-    id: "usdglo",
-    title: "USD Glo Dollar",
-    chain: "Celo",
-    image: "/badges/badgeusdglo.png",
-    summary: "Hold USDGLO on Celo to progress through simple time-based tiers.",
-    why:
-      "Glo Dollar links stable value with real-world impact. Holding a small amount on Celo helps users experience a mission-aligned stable asset while building a basic onchain footprint.",
-    how: [
-      "Get USDGLO on Celo (from a supported venue).",
-      "Hold the token in your wallet—no need to stake or lock.",
-      "Tiers unlock automatically after the required time windows.",
-    ],
-    tiers: [
-      { label: "Held > $1 USDGLO for more than 1 day" },
-      { label: "Held > $10 USDGLO for more than 7 days" },
-      { label: "Held > $100 USDGLO for more than 28 days" },
-      { label: "Held > $1000 USDGLO for more than 28 days" },
-      { label: "Held > $5000 USDGLO for more than 28 days" },
-    ],
-    external: [
-      { label: "Open Glo Dollar", href: "https://www.glodollar.org/" },
-      { label: "Open CeloPG", href: "https://celopg.eco" },
-    ],
-  },
-
-  // NEW — Eco Credit Retirement (Regen Atlas)
-  {
-    id: "eco-credit-retirement",
-    title: "Eco Credit Retirement",
-    chain: "Celo",
-    image: "/badges/badgeecr.png",
-    summary:
-      "Retire Eco Credits on Celo via Regen Atlas. Purchases are retired (burned) permanently.",
-    why:
-      "Retiring Eco Credits funds verified climate action and permanently burns those credits. ⚠️ This is irreversible: you buy credits with money and retire them to offset impact; they cannot be ‘un-retired’.",
-    how: [
-      "Open a supported Eco Credit pool on Regen Atlas.",
-      "Connect your EVM wallet on Celo.",
-      "Choose the quantity to retire and confirm the transaction.",
-      "Wait for confirmation; your retirement receipt will be visible in-app/explorer.",
-    ],
-    tiers: [
-      { label: "Retire 1 Eco Credits" },
-      { label: "Retire 10 Eco Credits" },
-      { label: "Retire 50 Eco Credits" },
-      { label: "Retire 250 Eco Credits" },
-      { label: "Retire 1000 Eco Credits" },
-    ],
-    external: [
-      { label: "Regen Atlas — Pool A", href: "https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" },
-      { label: "Regen Atlas — Pool B", href: "https://www.regenatlas.xyz/assets/d4a3e607-7bd5-49b0-a4ef-4715c2fe65d4" },
-    ],
-  },
-
-  // NEW — Self verification (Self Protocol)
-  {
-    id: "self-verification",
-    title: "Self verification",
-    chain: "Celo",
-    image: "/badges/badgeself.png", // ou "/badges/badgeselff.png"
-    summary: "Verify your uniqueness with the Self Protocol (privacy-preserving).",
-    why:
-      "Self uses zero-knowledge proofs to attest your uniqueness (and optionally your country) without exposing private data. This helps the ecosystem limit spam and strengthen on-chain reputation.",
-    how: [
-      "Install the Self app on your phone (Android/iOS).",
-      "In Celo Lite → Prosperity Passport, scan the QR to link your wallet.",
-      "Follow the flow in Self (liveness + optional country attestation).",
-      "Once validated, use “Self.xyz Verification” in Celo Lite.",
-    ],
-    tiers: [{ label: "Verify your Country via Self" }],
-    external: [
-      { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
-      { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
-    ],
-  },
-
-  // NEW — Celo Voter
+  // === Governance ===
   {
     id: "celo-voter",
     title: "Celo Voter",
@@ -112,8 +35,159 @@ const BADGES = [
       { label: "Open Mondo Governance", href: "https://mondo.celo.org/governance" },
     ],
   },
+  {
+    id: "governance-guardian",
+    title: "Governance Guardian",
+    chain: "Celo",
+    image: "/badges/ggbadge.png",
+    summary: "Issued to recognized Celo Governance Guardians.",
+    why:
+      "Governance Guardians provide an additional safeguard for the protocol and help maintain process integrity. This badge is granted to approved guardians; it’s not a general application track.",
+    how: [
+      "Be selected/approved as a Governance Guardian through the program’s governance process.",
+      "Your address is added to the official guardian list.",
+      "Once listed, the badge is reflected automatically in your Passport.",
+    ],
+    tiers: [{ label: "Be a Celo Guardian" }],
+    external: [
+      { label: "Mondo Governance", href: "https://mondo.celo.org/governance" },
+    ],
+  },
+  {
+    id: "s0-gov-contributor",
+    title: "S0 Gov Contributor",
+    chain: "Celo",
+    image: "/badges/s0govbadge.png",
+    summary: "Contributed to Celo Governance in Season 0 (counted via CeloPG Passport).",
+    why:
+      "Recognizes wallets that participated in governance during Season 0 tracked by CeloPG Passport. Historical badge; not an ongoing application.",
+    how: [
+      "Connect your wallet; eligible Season 0 governance contributions are detected automatically.",
+      "No new action required if your S0 votes/interactions were counted.",
+    ],
+    tiers: [
+      { label: "Contributed to Celo Governance in Season 0" },
+      { label: "Contributed to Celo Governance in Season 0" },
+    ],
+    external: [
+      { label: "Open CeloPG", href: "https://celopg.eco" },
+      { label: "Open CeloPG Passport", href: "https://pass.celopg.eco" },
+    ],
+  },
 
-  // NEW — Community Guild Member
+  // === Transactions ===
+  {
+    id: "cel2-transactions",
+    title: "CEL2 Transactions",
+    chain: "Celo",
+    image: "/badges/cel2txbadge.png",
+    summary:
+      "Make transactions on CEL2. The Daily check-in gives you one free tx per day.",
+    why:
+      "CEL2 is Celo’s L2. Regular usage decentralizes activity and builds your on-chain footprint. With the free Daily check-in you can interact at zero gas once per day — steady progress, no friction.",
+    how: [
+      "Connect your wallet on Celo Mainnet (CEL2).",
+      "Use the Daily check-in button in Celo Lite (1 free tx/day).",
+      "Do organic actions on CEL2 (governance, apps, transfers) to climb tiers.",
+    ],
+    tiers: [
+      { label: "10 transactions on CEL2" },
+      { label: "50 transactions on CEL2" },
+      { label: "100 transactions on CEL2" },
+      { label: "250 transactions on CEL2" },
+      { label: "500 transactions on CEL2" },
+    ],
+    external: [
+      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220" },
+    ],
+  },
+  {
+    id: "s1-transactions",
+    title: "S1 Transactions",
+    chain: "Celo",
+    image: "/badges/s1txsbadge.png",
+    summary:
+      "Number of transactions on Celo in Season 1 (since 23 Aug 2025; ends in ~93 days). Celo Lite shows your S1 counter (CEL1/CEL2/S1) to track progress.",
+    why:
+      "Season 1 highlights consistent on-chain activity in a defined window. Tracking S1 transactions helps you pace your engagement and unlock tiers during the season.",
+    how: [
+      "Connect your wallet in Celo Lite to display your S1 transaction counter.",
+      "Use Daily check-in (free tx/day) and interact organically across the ecosystem.",
+      "Keep an eye on your S1 total in the Wallet card (CEL1/CEL2/S1).",
+    ],
+    tiers: [
+      { label: "10 transactions on Celo in Season 1" },
+      { label: "50 transactions on Celo in Season 1" },
+      { label: "100 transactions on Celo in Season 1" },
+      { label: "250 transactions on Celo in Season 1" },
+      { label: "500 transactions on Celo in Season 1" },
+    ],
+    external: [],
+  },
+  {
+    id: "cel1-transactions",
+    title: "CEL1 Transactions",
+    chain: "Celo",
+    image: "/badges/cel1txbadge.png",
+    summary:
+      "Number of transactions on the former Celo L1 network (historical activity prior to CEL2).",
+    why:
+      "This badge reflects your footprint on the original Celo L1 before the move to CEL2. It’s a snapshot of legacy activity that showcases long-time participation in the ecosystem.",
+    how: [
+      "Connect your wallet in Celo Lite / Prosperity Passport.",
+      "Your historical L1 transaction count is detected automatically.",
+      "The corresponding tier is displayed; no extra action is required.",
+    ],
+    tiers: [
+      { label: "10 transactions on the old Celo network" },
+      { label: "50 transactions on the old Celo network" },
+      { label: "100 transactions on the old Celo network" },
+      { label: "250 transactions on the old Celo network" },
+      { label: "500 transactions on the old Celo network" },
+    ],
+    external: [],
+  },
+
+  // === Identity & Connections ===
+  {
+    id: "self-verification",
+    title: "Self verification",
+    chain: "Celo",
+    image: "/badges/badgeself.png", // ou "/badges/badgeselff.png"
+    summary: "Verify your uniqueness with the Self Protocol (privacy-preserving).",
+    why:
+      "Self uses zero-knowledge proofs to attest your uniqueness (and optionally your country) without exposing private data. This helps the ecosystem limit spam and strengthen on-chain reputation.",
+    how: [
+      "Install the Self app on your phone (Android/iOS).",
+      "In Celo Lite → Prosperity Passport, scan the QR to link your wallet.",
+      "Follow the flow in Self (liveness + optional country attestation).",
+      "Once validated, use “Self.xyz Verification” in Celo Lite.",
+    ],
+    tiers: [{ label: "Verify your Country via Self" }],
+    external: [
+      { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
+      { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
+    ],
+  },
+  {
+    id: "farcaster-connection",
+    title: "Farcaster Connection",
+    chain: "Optimism",
+    image: "/badges/fcconnectbadge.png",
+    summary: "Link your Farcaster account to your Prosperity Passport.",
+    why:
+      "Connecting Farcaster ties your social identity to your onchain reputation, helping programs discover real builders while keeping control in your hands.",
+    how: [
+      "Open CeloPG Passport.",
+      "Click the Farcaster Connection badge.",
+      "Scan the QR code from Warpcast to authorize linking.",
+      "Account linked — the badge turns complete.",
+    ],
+    tiers: [{ label: "Link your Farcaster account" }],
+    external: [{ label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" }],
+  },
+
+  // === Community & Roles ===
   {
     id: "community-guild-member",
     title: "Community Guild Member",
@@ -140,235 +214,63 @@ const BADGES = [
       { label: "Open Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
     ],
   },
-
-  // NEW — Proof of Ship
   {
-    id: "proof-of-ship",
-    title: "Proof of Ship",
+    id: "community-guild-lead",
+    title: "Community Guild Lead",
     chain: "Celo",
-    image: "/badges/posbadge.png",
-    summary: "Earn cUSD by shipping public work and logging it through the Proof of Ship flow.",
+    image: "/badges/cogbadge.png",
+    summary: "Issued to Celo Community Guild Leads.",
     why:
-      "Proof of Ship rewards builders for shipping public work aligned with Celo. Earnings are paid in cUSD and reflect consistent delivery, helping you build a verifiable on-chain track record.",
+      "Reserved for approved moderators/leads who coordinate community efforts. It recognizes trusted stewards rather than being an open application badge.",
     how: [
-      "Read how the integration works.",
-      "Open the Celo Proof of Ship program page.",
-      "Ship publicly (code, product, tutorial, integration) and submit according to the program instructions.",
-      "Connect your wallet and claim eligible rewards in cUSD when your ship is approved.",
+      "Be an active moderator or community organizer within the Celo ecosystem.",
+      "Get nominated/approved by Community Guild admins/moderators.",
+      "Once your wallet is added to the official leads list, the badge appears automatically.",
     ],
-    tiers: [
-      { label: "Earn 100 cUSD or more" },
-      { label: "Earn 250 cUSD or more" },
-      { label: "Earn 500 cUSD or more" },
-      { label: "Earn 750 cUSD or more" },
-      { label: "Earn 1000 cUSD or more" },
-    ],
+    tiers: [{ label: "Be a Community Guild Lead" }],
     external: [
-      { label: "How it works (Docs)", href: "https://docs.gap.karmahq.xyz/how-to-guides/integrations/celo-proof-of-ship" },
-      { label: "Program page", href: "https://www.celopg.eco/programs/proof-of-ship-s1" },
+      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+      { label: "Celo Discord", href: "https://discord.gg/celo" },
     ],
   },
-
-  // NEW — CEL2 Transactions
   {
-    id: "cel2-transactions",
-    title: "CEL2 Transactions",
+    id: "regional-dao-lead",
+    title: "Regional DAO Lead",
     chain: "Celo",
-    image: "/badges/cel2txbadge.png",
-    summary:
-      "Make transactions on CEL2. The Daily check-in gives you one free tx per day.",
+    image: "/badges/regionaldaoleadbadge.png",
+    summary: "Part of the Celo Regional DAO Steward list (by nomination/selection).",
     why:
-      "CEL2 is Celo’s L2. Regular usage decentralizes activity and builds your on-chain footprint. With the free Daily check-in you can interact at zero gas once per day — steady progress, no friction.",
+      "Regional DAO Leads coordinate local communities, events, and programs. This badge recognizes approved stewards; it’s not a general-access application.",
     how: [
-      "Connect your wallet on Celo Mainnet (CEL2).",
-      "Use the Daily check-in button in Celo Lite (1 free tx/day).",
-      "Do organic actions on CEL2 (governance, apps, transfers) to climb tiers.",
+      "Be active in your local Celo community (events, education, coordination).",
+      "If your region runs a steward process, you may be nominated/approved by program admins.",
+      "Once approved, your wallet/address is added to the steward list and reflected as a badge.",
     ],
-    tiers: [
-      { label: "10 transactions on CEL2" },
-      { label: "50 transactions on CEL2" },
-      { label: "100 transactions on CEL2" },
-      { label: "250 transactions on CEL2" },
-      { label: "500 transactions on CEL2" },
-    ],
+    tiers: [{ label: "Become a Celo Regional DAO Lead" }],
     external: [
-      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220" },
+      { label: "Celo Discord (communities)", href: "https://discord.gg/celo" },
+      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
     ],
   },
-
-  // NEW — Talent Protocol / Builder Score
   {
-    id: "talent-protocol-score",
-    title: "Builder Score",
+    id: "celopg-steward",
+    title: "CeloPG Steward",
     chain: "Celo",
-    image: "/badges/talentscorebadge.png",
-    summary:
-      "Increase your Talent Protocol Builder Score to signal reputation across the ecosystem.",
+    image: "/badges/cpgstewardbadge.png",
+    summary: "Part of the CeloPG Steward list (community steward role).",
     why:
-      "The Builder Score reflects sustained, verifiable builder activity (profile completeness, contributions, participation). A higher score helps showcase credibility and unlock opportunities.",
+      "CeloPG Stewards support the Prosperity Guild’s programs and community ops. This badge recognizes approved stewards; it’s not a general-access sign-up.",
     how: [
-      "Create or sign in to your Talent Protocol profile.",
-      "Connect your wallet and complete your builder profile.",
-      "Link your work and contributions (projects, repos, posts).",
-      "Stay active: ship, document, and keep your profile updated to grow your score.",
+      "Contribute actively to CeloPG programs and community operations.",
+      "Be nominated/approved by CeloPG program admins as a Steward.",
+      "Once approved and listed, the badge appears in your Passport.",
     ],
-    tiers: [
-      { label: "Have a Builder score above 20" },
-      { label: "Have a Builder score above 40" },
-      { label: "Have a Builder score above 60" },
-      { label: "Have a Builder score above 80" },
-    ],
+    tiers: [{ label: "Become a CeloPG Steward" }],
     external: [
-      { label: "Open Talent Protocol", href: "https://app.talentprotocol.com/" },
+      { label: "Celo Discord", href: "https://discord.gg/celo" },
+      { label: "CeloPG", href: "https://celopg.eco" },
     ],
   },
-
-  // NEW — S1 Transactions (Season 1)
-  {
-    id: "s1-transactions",
-    title: "S1 Transactions",
-    chain: "Celo",
-    image: "/badges/s1txsbadge.png",
-    summary:
-      "Number of transactions on Celo in Season 1 (since 23 Aug 2025; ends in ~93 days). Celo Lite shows your S1 counter (CEL1/CEL2/S1) to track progress.",
-    why:
-      "Season 1 highlights consistent on-chain activity in a defined window. Tracking S1 transactions helps you pace your engagement and unlock tiers during the season.",
-    how: [
-      "Connect your wallet in Celo Lite to display your S1 transaction counter.",
-      "Use Daily check-in (free tx/day) and interact organically across the ecosystem.",
-      "Keep an eye on your S1 total in the Wallet card (CEL1/CEL2/S1).",
-    ],
-    tiers: [
-      { label: "10 transactions on Celo in Season 1" },
-      { label: "50 transactions on Celo in Season 1" },
-      { label: "100 transactions on Celo in Season 1" },
-      { label: "250 transactions on Celo in Season 1" },
-      { label: "500 transactions on Celo in Season 1" },
-    ],
-    external: [],
-  },
-
-  // NEW — Gitcoin Donor
-  {
-    id: "gitcoin-donor",
-    title: "Gitcoin Donor",
-    chain: "Celo",
-    image: "/badges/gtcdonorbadge.png",
-    summary: "Donate on Gitcoin using Celo to support public goods.",
-    why:
-      "Gitcoin funding supports builders and public goods across the ecosystem. ⚠ Donations use real funds and are generally non-refundable.",
-    how: [
-      "Open Gitcoin Grants and connect your wallet.",
-      "Choose a grantee and select Celo if available (or bridge if needed).",
-      "Confirm the donation transaction.",
-      "Keep records for your own accounting if required.",
-    ],
-    tiers: [
-      { label: "Donate $25 more on Gitcoin" },
-      { label: "Donate $100 more on Gitcoin" },
-      { label: "Donate $250 more on Gitcoin" },
-      { label: "Donate $1000 more on Gitcoin" },
-    ],
-    external: [
-      { label: "Open Gitcoin Grants", href: "https://grants.gitcoin.co/" },
-    ],
-  },
-
-  // NEW — Giveth Donor
-  {
-    id: "giveth-donor",
-    title: "Giveth Donor",
-    chain: "Celo",
-    image: "/badges/givethdonorbadge.png",
-    summary: "Donate on Giveth using Celo to support public goods & communities.",
-    why:
-      "Giveth channels donations directly to projects. ⚠ Donations use real funds and are generally non-refundable.",
-    how: [
-      "Open Giveth projects filtered for Celo.",
-      "Pick a project, connect your wallet, and select Celo if needed.",
-      "Confirm the donation transaction.",
-      "Optionally keep your receipt/tx hash for your records.",
-    ],
-    tiers: [
-      { label: "Donate $25 more on Giveth" },
-      { label: "Donate $100 more on Giveth" },
-      { label: "Donate $250 more on Giveth" },
-      { label: "Donate $1000 more on Giveth" },
-    ],
-    external: [
-      { label: "Open Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
-    ],
-  },
-
-  // NEW — Celo Genesis
-  {
-    id: "celo-genesis",
-    title: "Celo Genesis",
-    chain: "Celo",
-    image: "/badges/celogenesisbadge.png",
-    summary: "Recognition based on the year your Celo wallet was created.",
-    why:
-      "Genesis reflects when you first joined the Celo network. Earlier creation dates signal long-term participation; newer dates welcome fresh builders to the ecosystem.",
-    how: [
-      "Connect your wallet in Prosperity Passport.",
-      "Your wallet’s creation/first-activity year is detected automatically.",
-      "The corresponding tier is shown; claim your badge.",
-    ],
-    tiers: [
-      { label: "Wallet created in the year 2024" },
-      { label: "Wallet created in the year 2023" },
-      { label: "Wallet created in the year 2022" },
-      { label: "Wallet created in the year 2021" },
-      { label: "Wallet created in the year 2020" },
-    ],
-    external: [],
-  },
-
-  // NEW — Farcaster Connection
-  {
-    id: "farcaster-connection",
-    title: "Farcaster Connection",
-    chain: "Optimism",
-    image: "/badges/fcconnectbadge.png",
-    summary: "Link your Farcaster account to your Prosperity Passport.",
-    why:
-      "Connecting Farcaster ties your social identity to your onchain reputation, helping programs discover real builders while keeping control in your hands.",
-    how: [
-      "Open CeloPG Passport.",
-      "Click the Farcaster Connection badge.",
-      "Scan the QR code from Warpcast to authorize linking.",
-      "Account linked — the badge turns complete.",
-    ],
-    tiers: [{ label: "Link your Farcaster account" }],
-    external: [{ label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" }],
-  },
-
-  // NEW — CEL1 Transactions
-  {
-    id: "cel1-transactions",
-    title: "CEL1 Transactions",
-    chain: "Celo",
-    image: "/badges/cel1txbadge.png",
-    summary:
-      "Number of transactions on the former Celo L1 network (historical activity prior to CEL2).",
-    why:
-      "This badge reflects your footprint on the original Celo L1 before the move to CEL2. It’s a snapshot of legacy activity that showcases long-time participation in the ecosystem.",
-    how: [
-      "Connect your wallet in Celo Lite / Prosperity Passport.",
-      "Your historical L1 transaction count is detected automatically.",
-      "The corresponding tier is displayed; no extra action is required.",
-    ],
-    tiers: [
-      { label: "10 transactions on the old Celo network" },
-      { label: "50 transactions on the old Celo network" },
-      { label: "100 transactions on the old Celo network" },
-      { label: "250 transactions on the old Celo network" },
-      { label: "500 transactions on the old Celo network" },
-    ],
-    external: [],
-  },
-
-  // NEW — ReFi DAO Contributor
   {
     id: "refi-dao-contributor",
     title: "ReFi DAO Contributor",
@@ -393,8 +295,6 @@ const BADGES = [
       { label: "ReFi DAO — Sign up (may be closed)", href: "https://www.refidao.com/join#sign-up" },
     ],
   },
-
-  // NEW — GreenPill Member
   {
     id: "greenpill-member",
     title: "GreenPill Member",
@@ -418,141 +318,6 @@ const BADGES = [
       { label: "About GreenPill", href: "https://www.superchain.eco/projects/green-pill" }, // NEW
     ],
   },
-
-  // NEW — Regional DAO Lead
-  {
-    id: "regional-dao-lead",
-    title: "Regional DAO Lead",
-    chain: "Celo",
-    image: "/badges/regionaldaoleadbadge.png",
-    summary: "Part of the Celo Regional DAO Steward list (by nomination/selection).",
-    why:
-      "Regional DAO Leads coordinate local communities, events, and programs. This badge recognizes approved stewards; it’s not a general-access application.",
-    how: [
-      "Be active in your local Celo community (events, education, coordination).",
-      "If your region runs a steward process, you may be nominated/approved by program admins.",
-      "Once approved, your wallet/address is added to the steward list and reflected as a badge.",
-    ],
-    tiers: [{ label: "Become a Celo Regional DAO Lead" }],
-    external: [
-      { label: "Celo Discord (communities)", href: "https://discord.gg/celo" },
-      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
-    ],
-  },
-
-  // NEW — Community Guild Lead
-  {
-    id: "community-guild-lead",
-    title: "Community Guild Lead",
-    chain: "Celo",
-    image: "/badges/cogbadge.png",
-    summary: "Issued to Celo Community Guild Leads.",
-    why:
-      "Reserved for approved moderators/leads who coordinate community efforts. It recognizes trusted stewards rather than being an open application badge.",
-    how: [
-      "Be an active moderator or community organizer within the Celo ecosystem.",
-      "Get nominated/approved by Community Guild admins/moderators.",
-      "Once your wallet is added to the official leads list, the badge appears automatically.",
-    ],
-    tiers: [{ label: "Be a Community Guild Lead" }],
-    external: [
-      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
-      { label: "Celo Discord", href: "https://discord.gg/celo" },
-    ],
-  },
-
-  // NEW — Governance Guardian
-  {
-    id: "governance-guardian",
-    title: "Governance Guardian",
-    chain: "Celo",
-    image: "/badges/ggbadge.png",
-    summary: "Issued to recognized Celo Governance Guardians.",
-    why:
-      "Governance Guardians provide an additional safeguard for the protocol and help maintain process integrity. This badge is granted to approved guardians; it’s not a general application track.",
-    how: [
-      "Be selected/approved as a Governance Guardian through the program’s governance process.",
-      "Your address is added to the official guardian list.",
-      "Once listed, the badge is reflected automatically in your Passport.",
-    ],
-    tiers: [{ label: "Be a Celo Guardian" }],
-    external: [
-      { label: "Mondo Governance", href: "https://mondo.celo.org/governance" },
-    ],
-  },
-
-  // NEW — CeloPG Steward
-  {
-    id: "celopg-steward",
-    title: "CeloPG Steward",
-    chain: "Celo",
-    image: "/badges/cpgstewardbadge.png",
-    summary: "Part of the CeloPG Steward list (community steward role).",
-    why:
-      "CeloPG Stewards support the Prosperity Guild’s programs and community ops. This badge recognizes approved stewards; it’s not a general-access sign-up.",
-    how: [
-      "Contribute actively to CeloPG programs and community operations.",
-      "Be nominated/approved by CeloPG program admins as a Steward.",
-      "Once approved and listed, the badge appears in your Passport.",
-    ],
-    tiers: [{ label: "Become a CeloPG Steward" }],
-    external: [
-      { label: "Celo Discord", href: "https://discord.gg/celo" },
-      { label: "CeloPG", href: "https://celopg.eco" },
-    ],
-  },
-
-  // NEW — Celo Event POAPs
-  {
-    id: "celo-event-poaps",
-    title: "Celo Event POAPs",
-    chain: "Celo",
-    image: "/badges/ceventpoapbadge.png",
-    summary: "Total number of Celo Event POAPs via Lemonade Social. (Appears to be paused.)",
-    why:
-      "Tracks historical attendance at Celo events that issued POAPs. Recent activity seems limited; treat this as a past-participation badge.",
-    how: [
-      "If your wallet has Celo event POAPs, connect to have them counted.",
-      "Tiers reflect cumulative POAPs across eligible Celo events.",
-    ],
-    tiers: [
-      { label: "Claimed 1 Celo POAPs" },
-      { label: "Claimed 10 Celo POAPs" },
-      { label: "Claimed 25 Celo POAPs" },
-      { label: "Claimed 100 Celo POAPs" },
-      { label: "Claimed 200 Celo POAPs" },
-    ],
-    external: [
-      { label: "Lemonade Social — Celo", href: "https://lemonade.social/s/celo" },
-    ],
-  },
-
-  // NEW — Celo Citizen (historical)
-  {
-    id: "celo-citizen",
-    title: "Celo Citizen",
-    chain: "Celo",
-    image: "/badges/citizenbadge.png",
-    summary: "Receive rewards from Celo Citizen Retro 2024 (historical program).",
-    why:
-      "Celo Citizen Retro 2024 rewarded impactful contributors with CELO. This badge records amounts received; the program is closed and serves as proof of past participation.",
-    how: [
-      "If you received Retro 2024 rewards, connect your wallet to have them detected automatically.",
-      "Your total rewards determine the tier shown; no additional action is required.",
-    ],
-    tiers: [
-      { label: "Receive 100 CELO from Celo Citizen Retro 2024" },
-      { label: "Receive 1000 CELO from Celo Citizen Retro 2024" },
-      { label: "Receive 2500 CELO from Celo Citizen Retro 2024" },
-      { label: "Receive 5000 CELO from Celo Citizen Retro 2024" },
-      { label: "Receive 10000 CELO from Celo Citizen Retro 2024" },
-    ],
-    external: [
-      { label: "About Celo Citizen Retro 2024", href: "https://www.celopg.eco/insights/announcing-celo-citizen-retro-24" },
-    ],
-  },
-
-  // NEW — TDF Contributor
   {
     id: "tdf-contributor",
     title: "TDF Contributor",
@@ -578,31 +343,6 @@ const BADGES = [
       { label: "Oasa / TDF Whitepaper", href: "https://oasa.earth/papers/OASA-Whitepaper-V1.2.pdf" },
     ],
   },
-
-  // NEW — S0 Gov Contributor (historical)
-  {
-    id: "s0-gov-contributor",
-    title: "S0 Gov Contributor",
-    chain: "Celo",
-    image: "/badges/s0govbadge.png",
-    summary: "Contributed to Celo Governance in Season 0 (counted via CeloPG Passport).",
-    why:
-      "Recognizes wallets that participated in governance during Season 0 tracked by CeloPG Passport. Historical badge; not an ongoing application.",
-    how: [
-      "Connect your wallet; eligible Season 0 governance contributions are detected automatically.",
-      "No new action required if your S0 votes/interactions were counted.",
-    ],
-    tiers: [
-      { label: "Contributed to Celo Governance in Season 0" },
-      { label: "Contributed to Celo Governance in Season 0" },
-    ],
-    external: [
-      { label: "Open CeloPG", href: "https://celopg.eco" },
-      { label: "Open CeloPG Passport", href: "https://pass.celopg.eco" },
-    ],
-  },
-
-  // NEW — Let’s Grow Contributor (LGD)
   {
     id: "lets-grow-contributor",
     title: "Let’s Grow Contributor",
@@ -630,9 +370,234 @@ const BADGES = [
       { label: "Let’s Grow — Manifesto", href: "https://www.letsgrow.network/manifesto" },
     ],
   },
+
+  // === Builder / Work & Reputation ===
+  {
+    id: "proof-of-ship",
+    title: "Proof of Ship",
+    chain: "Celo",
+    image: "/badges/posbadge.png",
+    summary: "Earn cUSD by shipping public work and logging it through the Proof of Ship flow.",
+    why:
+      "Proof of Ship rewards builders for shipping public work aligned with Celo. Earnings are paid in cUSD and reflect consistent delivery, helping you build a verifiable on-chain track record.",
+    how: [
+      "Read how the integration works.",
+      "Open the Celo Proof of Ship program page.",
+      "Ship publicly (code, product, tutorial, integration) and submit according to the program instructions.",
+      "Connect your wallet and claim eligible rewards in cUSD when your ship is approved.",
+    ],
+    tiers: [
+      { label: "Earn 100 cUSD or more" },
+      { label: "Earn 250 cUSD or more" },
+      { label: "Earn 500 cUSD or more" },
+      { label: "Earn 750 cUSD or more" },
+      { label: "Earn 1000 cUSD or more" },
+    ],
+    external: [
+      { label: "How it works (Docs)", href: "https://docs.gap.karmahq.xyz/how-to-guides/integrations/celo-proof-of-ship" },
+      { label: "Program page", href: "https://www.celopg.eco/programs/proof-of-ship-s1" },
+    ],
+  },
+  {
+    id: "talent-protocol-score",
+    title: "Builder Score",
+    chain: "Celo",
+    image: "/badges/talentscorebadge.png",
+    summary:
+      "Increase your Talent Protocol Builder Score to signal reputation across the ecosystem.",
+    why:
+      "The Builder Score reflects sustained, verifiable builder activity (profile completeness, contributions, participation). A higher score helps showcase credibility and unlock opportunities.",
+    how: [
+      "Create or sign in to your Talent Protocol profile.",
+      "Connect your wallet and complete your builder profile.",
+      "Link your work and contributions (projects, repos, posts).",
+      "Stay active: ship, document, and keep your profile updated to grow your score.",
+    ],
+    tiers: [
+      { label: "Have a Builder score above 20" },
+      { label: "Have a Builder score above 40" },
+      { label: "Have a Builder score above 60" },
+      { label: "Have a Builder score above 80" },
+    ],
+    external: [
+      { label: "Open Talent Protocol", href: "https://app.talentprotocol.com/" },
+    ],
+  },
+
+  // === Impact & Donations ===
+  {
+    id: "eco-credit-retirement",
+    title: "Eco Credit Retirement",
+    chain: "Celo",
+    image: "/badges/badgeecr.png",
+    summary:
+      "Retire Eco Credits on Celo via Regen Atlas. Purchases are retired (burned) permanently.",
+    why:
+      "Retiring Eco Credits funds verified climate action and permanently burns those credits. ⚠️ This is irreversible: you buy credits with money and retire them to offset impact; they cannot be ‘un-retired’.",
+    how: [
+      "Open a supported Eco Credit pool on Regen Atlas.",
+      "Connect your EVM wallet on Celo.",
+      "Choose the quantity to retire and confirm the transaction.",
+      "Wait for confirmation; your retirement receipt will be visible in-app/explorer.",
+    ],
+    tiers: [
+      { label: "Retire 1 Eco Credits" },
+      { label: "Retire 10 Eco Credits" },
+      { label: "Retire 50 Eco Credits" },
+      { label: "Retire 250 Eco Credits" },
+      { label: "Retire 1000 Eco Credits" },
+    ],
+    external: [
+      { label: "Regen Atlas — Pool A", href: "https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" },
+      { label: "Regen Atlas — Pool B", href: "https://www.regenatlas.xyz/assets/d4a3e607-7bd5-49b0-a4ef-4715c2fe65d4" },
+    ],
+  },
+  {
+    id: "gitcoin-donor",
+    title: "Gitcoin Donor",
+    chain: "Celo",
+    image: "/badges/gtcdonorbadge.png",
+    summary: "Donate on Gitcoin using Celo to support public goods.",
+    why:
+      "Gitcoin funding supports builders and public goods across the ecosystem. ⚠ Donations use real funds and are generally non-refundable.",
+    how: [
+      "Open Gitcoin Grants and connect your wallet.",
+      "Choose a grantee and select Celo if available (or bridge if needed).",
+      "Confirm the donation transaction.",
+      "Keep records for your own accounting if required.",
+    ],
+    tiers: [
+      { label: "Donate $25 more on Gitcoin" },
+      { label: "Donate $100 more on Gitcoin" },
+      { label: "Donate $250 more on Gitcoin" },
+      { label: "Donate $1000 more on Gitcoin" },
+    ],
+    external: [
+      { label: "Open Gitcoin Grants", href: "https://grants.gitcoin.co/" },
+    ],
+  },
+  {
+    id: "giveth-donor",
+    title: "Giveth Donor",
+    chain: "Celo",
+    image: "/badges/givethdonorbadge.png",
+    summary: "Donate on Giveth using Celo to support public goods & communities.",
+    why:
+      "Giveth channels donations directly to projects. ⚠ Donations use real funds and are generally non-refundable.",
+    how: [
+      "Open Giveth projects filtered for Celo.",
+      "Pick a project, connect your wallet, and select Celo if needed.",
+      "Confirm the donation transaction.",
+      "Optionally keep your receipt/tx hash for your records.",
+    ],
+    tiers: [
+      { label: "Donate $25 more on Giveth" },
+      { label: "Donate $100 more on Giveth" },
+      { label: "Donate $250 more on Giveth" },
+      { label: "Donate $1000 more on Giveth" },
+    ],
+    external: [
+      { label: "Open Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
+    ],
+  },
+
+  // === Historical & Attendance ===
+  {
+    id: "celo-citizen",
+    title: "Celo Citizen",
+    chain: "Celo",
+    image: "/badges/citizenbadge.png",
+    summary: "Receive rewards from Celo Citizen Retro 2024 (historical program).",
+    why:
+      "Celo Citizen Retro 2024 rewarded impactful contributors with CELO. This badge records amounts received; the program is closed and serves as proof of past participation.",
+    how: [
+      "If you received Retro 2024 rewards, connect your wallet to have them detected automatically.",
+      "Your total rewards determine the tier shown; no additional action is required.",
+    ],
+    tiers: [
+      { label: "Receive 100 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 1000 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 2500 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 5000 CELO from Celo Citizen Retro 2024" },
+      { label: "Receive 10000 CELO from Celo Citizen Retro 2024" },
+    ],
+    external: [
+      { label: "About Celo Citizen Retro 2024", href: "https://www.celopg.eco/insights/announcing-celo-citizen-retro-24" },
+    ],
+  },
+  {
+    id: "celo-event-poaps",
+    title: "Celo Event POAPs",
+    chain: "Celo",
+    image: "/badges/ceventpoapbadge.png",
+    summary: "Total number of Celo Event POAPs via Lemonade Social. (Appears to be paused.)",
+    why:
+      "Tracks historical attendance at Celo events that issued POAPs. Recent activity seems limited; treat this as a past-participation badge.",
+    how: [
+      "If your wallet has Celo event POAPs, connect to have them counted.",
+      "Tiers reflect cumulative POAPs across eligible Celo events.",
+    ],
+    tiers: [
+      { label: "Claimed 1 Celo POAPs" },
+      { label: "Claimed 10 Celo POAPs" },
+      { label: "Claimed 25 Celo POAPs" },
+      { label: "Claimed 100 Celo POAPs" },
+      { label: "Claimed 200 Celo POAPs" },
+    ],
+    external: [
+      { label: "Lemonade Social — Celo", href: "https://lemonade.social/s/celo" },
+    ],
+  },
+  {
+    id: "celo-genesis",
+    title: "Celo Genesis",
+    chain: "Celo",
+    image: "/badges/celogenesisbadge.png",
+    summary: "Recognition based on the year your Celo wallet was created.",
+    why:
+      "Genesis reflects when you first joined the Celo network. Earlier creation dates signal long-term participation; newer dates welcome fresh builders to the ecosystem.",
+    how: [
+      "Connect your wallet in Prosperity Passport.",
+      "Your wallet’s creation/first-activity year is detected automatically.",
+      "The corresponding tier is shown; claim your badge.",
+    ],
+    tiers: [
+      { label: "Wallet created in the year 2024" },
+      { label: "Wallet created in the year 2023" },
+      { label: "Wallet created in the year 2022" },
+      { label: "Wallet created in the year 2021" },
+      { label: "Wallet created in the year 2020" },
+    ],
+    external: [],
+  },
+
+  // === Assets / Holdings ===
+  {
+    id: "usdglo",
+    title: "USD Glo Dollar",
+    chain: "Celo",
+    image: "/badges/badgeusdglo.png",
+    summary: "Hold USDGLO on Celo to progress through simple time-based tiers.",
+    why:
+      "Glo Dollar links stable value with real-world impact. Holding a small amount on Celo helps users experience a mission-aligned stable asset while building a basic onchain footprint.",
+    how: [
+      "Get USDGLO on Celo (from a supported venue).",
+      "Hold the token in your wallet—no need to stake or lock.",
+      "Tiers unlock automatically after the required time windows.",
+    ],
+    tiers: [
+      { label: "Held > $1 USDGLO for more than 1 day" },
+      { label: "Held > $10 USDGLO for more than 7 days" },
+      { label: "Held > $100 USDGLO for more than 28 days" },
+      { label: "Held > $1000 USDGLO for more than 28 days" },
+      { label: "Held > $5000 USDGLO for more than 28 days" },
+    ],
+    external: [
+      { label: "Open Glo Dollar", href: "https://www.glodollar.org/" },
+      { label: "Open CeloPG", href: "https://celopg.eco" },
+    ],
+  },
 ];
-
-
 
 
 
