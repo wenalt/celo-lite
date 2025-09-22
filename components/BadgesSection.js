@@ -601,7 +601,37 @@ const BADGES = [
       { label: "Open CeloPG Passport", href: "https://pass.celopg.eco" },
     ],
   },
+
+  // NEW — Let’s Grow Contributor (LGD)
+  {
+    id: "lets-grow-contributor",
+    title: "Let’s Grow Contributor",
+    chain: "Optimism",
+    image: "/badges/lgcbadge.png",
+    summary:
+      "LGD merit-based amiGROW badges. Sign the Manifesto, mint the Member NFT on Optimism, then contribute to earn tiers.",
+    why:
+      "Let’s Grow DAO (LGD) coordinates regen contributors. Signing the Manifesto and joining as a member lets you earn amiGROW badges for meaningful contributions.",
+    how: [
+      "Open Let’s Grow and read the Manifesto.",
+      "Sign the Manifesto and connect your wallet on Optimism.",
+      "Mint the Let’s Grow Member NFT (when available).",
+      "Contribute to earn amiGROW badges and level up tiers.",
+    ],
+    tiers: [
+      { label: "Get Let's Grow DAO merit-based amiGROW badge tier 1" },
+      { label: "Get Let's Grow DAO merit-based amiGROW badge tier 2" },
+      { label: "Get Let's Grow DAO merit-based amiGROW badge tier 3" },
+      { label: "Get Let's Grow DAO merit-based amiGROW badge tier 4" },
+      { label: "Get Let's Grow DAO merit-based amiGROW badge tier 5" },
+    ],
+    external: [
+      { label: "Let’s Grow — Home", href: "https://www.letsgrow.network/" },
+      { label: "Let’s Grow — Manifesto", href: "https://www.letsgrow.network/manifesto" },
+    ],
+  },
 ];
+
 
 
 
