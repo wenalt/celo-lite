@@ -60,14 +60,8 @@ const BADGES = [
       { label: "Retire 1000 Eco Credits" },
     ],
     external: [
-      {
-        label: "Regen Atlas — Pool A",
-        href: "https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548",
-      },
-      {
-        label: "Regen Atlas — Pool B",
-        href: "https://www.regenatlas.xyz/assets/d4a3e607-7bd5-49b0-a4ef-4715c2fe65d4",
-      },
+      { label: "Regen Atlas — Pool A", href: "https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" },
+      { label: "Regen Atlas — Pool B", href: "https://www.regenatlas.xyz/assets/d4a3e607-7bd5-49b0-a4ef-4715c2fe65d4" },
     ],
   },
 
@@ -88,14 +82,8 @@ const BADGES = [
     ],
     tiers: [{ label: "Verify your Country via Self" }],
     external: [
-      {
-        label: "Self on Android",
-        href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp",
-      },
-      {
-        label: "Self on iOS",
-        href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710",
-      },
+      { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
+      { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
     ],
   },
 
@@ -379,7 +367,34 @@ const BADGES = [
     ],
     external: [],
   },
+
+  // NEW — ReFi DAO Contributor
+  {
+    id: "refi-dao-contributor",
+    title: "ReFi DAO Contributor",
+    chain: "Celo",
+    image: "/badges/refibadge.png",
+    summary:
+      "Recognition for contributors listed in ReFi DAO’s contributor registry. (Note: new registrations appear to be closed.)",
+    why:
+      "This badge highlights prior or existing participation in ReFi DAO’s contributor program. If you’re already on the list, it helps surface your ReFi involvement in the Celo ecosystem.",
+    how: [
+      "If you were previously registered, connect your wallet to have it recognized.",
+      "New registrations currently show an error on the sign-up page; follow ReFi DAO channels for future openings.",
+    ],
+    tiers: [
+      { label: "ReFi DAO Contributor Level 1" },
+      { label: "ReFi DAO Contributor Level 2" },
+      { label: "ReFi DAO Contributor Level 3" },
+      { label: "ReFi DAO Contributor Level 4" },
+      { label: "ReFi DAO Contributor Level 5" },
+    ],
+    external: [
+      { label: "ReFi DAO — Sign up (may be closed)", href: "https://www.refidao.com/join#sign-up" },
+    ],
+  },
 ];
+
 
 
 
