@@ -415,10 +415,11 @@ const BADGES = [
     ],
     external: [
       { label: "Participate — GreenPill Network", href: "https://greenpill.network/#participate" },
-      { label: "About GreenPill", href: "https://www.superchain.eco/projects/green-pill" },
+      { label: "About GreenPill", href: "https://www.superchain.eco/projects/green-pill" }, // NEW
     ],
   },
 ];
+
 
 
 
