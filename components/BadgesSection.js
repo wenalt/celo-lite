@@ -259,7 +259,34 @@ const BADGES = [
     ],
     external: [],
   },
+
+  // NEW — Gitcoin Donor
+  {
+    id: "gitcoin-donor",
+    title: "Gitcoin Donor",
+    chain: "Celo",
+    image: "/badges/gtcdonorbadge.png",
+    summary: "Donate on Gitcoin using Celo to support public goods.",
+    why:
+      "Gitcoin funding supports builders and public goods across the ecosystem. ⚠️ Donations use real funds and are generally non-refundable.",
+    how: [
+      "Open Gitcoin Grants and connect your wallet.",
+      "Choose a grantee and select Celo if available (or bridge if needed).",
+      "Confirm the donation transaction.",
+      "Keep records for your own accounting if required.",
+    ],
+    tiers: [
+      { label: "Donate $25 more on Gitcoin" },
+      { label: "Donate $100 more on Gitcoin" },
+      { label: "Donate $250 more on Gitcoin" },
+      { label: "Donate $1000 more on Gitcoin" },
+    ],
+    external: [
+      { label: "Open Gitcoin Grants", href: "https://grants.gitcoin.co/" },
+    ],
+  },
 ];
+
 
 
 
