@@ -487,13 +487,13 @@ const BADGES = [
     title: "CeloPG Steward",
     chain: "Celo",
     image: "/badges/cpgstewardbadge.png",
-    summary: "Part of CeloPG Steward List.",
+    summary: "Part of the CeloPG Steward list (community steward/moderator role).",
     why:
-      "CeloPG Stewards help coordinate Passport/program operations and community support. This badge recognizes designated stewards; it’s not a public application track.",
+      "CeloPG Stewards help coordinate programs, support builders, and keep the community safe and active. This badge recognizes approved stewards; it isn’t an open application.",
     how: [
-      "Contribute to CeloPG initiatives (support, education, coordination).",
-      "If selected by program admins, your address is added to the steward list.",
-      "Once listed, the badge will appear automatically in Passport.",
+      "Contribute consistently within CeloPG programs and community channels.",
+      "If selected by admins, your wallet is added to the steward list.",
+      "Once listed, the badge appears automatically in your Passport.",
     ],
     tiers: [{ label: "Become a CeloPG Steward" }],
     external: [
@@ -501,7 +501,34 @@ const BADGES = [
       { label: "Celo Discord", href: "https://discord.gg/celo" },
     ],
   },
+
+  // NEW — Celo Event POAPs
+  {
+    id: "celo-event-poaps",
+    title: "Celo Event POAPs",
+    chain: "Celo",
+    image: "/badges/ceventpoapbadge.png",
+    summary: "Total number of Celo Event POAPs via Lemonade Social.",
+    why:
+      "POAPs commemorate attendance at Celo events and meetups. Availability depends on event organizers and may be paused at times; previously issued POAPs still count toward your total.",
+    how: [
+      "Open the Celo space on Lemonade Social.",
+      "Connect your wallet and look for eligible Celo event POAPs.",
+      "Claim POAPs when available; your running total updates as you collect.",
+    ],
+    tiers: [
+      { label: "Claimed 1 Celo POAPs" },
+      { label: "Claimed 10 Celo POAPs" },
+      { label: "Claimed 25 Celo POAPs" },
+      { label: "Claimed 100 Celo POAPs" },
+      { label: "Claimed 200 Celo POAPs" },
+    ],
+    external: [
+      { label: "Lemonade Social — Celo", href: "https://lemonade.social/s/celo" },
+    ],
+  },
 ];
+
 
 
 
