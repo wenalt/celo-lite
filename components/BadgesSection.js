@@ -393,7 +393,34 @@ const BADGES = [
       { label: "ReFi DAO — Sign up (may be closed)", href: "https://www.refidao.com/join#sign-up" },
     ],
   },
+
+  // NEW — GreenPill Member
+  {
+    id: "greenpill-member",
+    title: "GreenPill Member",
+    chain: "Celo",
+    image: "/badges/greenpillbadge.png",
+    summary: "Part of GreenPill Member List.",
+    why:
+      "GreenPill connects regen-minded builders and doers. Membership signals alignment with public goods and coordination-first values across the Celo ecosystem.",
+    how: [
+      "Visit GreenPill Network and explore participation paths (chapters, events, contributions).",
+      "Follow the participation flow to become a member (varies by chapter/track).",
+      "Once listed/recognized, your membership tier will reflect in Passport.",
+    ],
+    tiers: [
+      { label: "Tier 1 member" },
+      { label: "Tier 2 member" },
+      { label: "Tier 3 member" },
+    ],
+    external: [
+      { label: "Participate — GreenPill Network", href: "https://greenpill.network/#participate" },
+      { label: "About GreenPill", href: "https://www.superchain.eco/projects/green-pill" },
+    ],
+  },
 ];
+
+
 
 
 
