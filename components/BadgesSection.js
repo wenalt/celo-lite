@@ -335,10 +335,26 @@ const BADGES = [
     ],
     external: [],
   },
+
+  // NEW — Farcaster Connection
+  {
+    id: "farcaster-connection",
+    title: "Farcaster Connection",
+    chain: "Optimism",
+    image: "/badges/fcconnectbadge.png",
+    summary: "Link your Farcaster account to your Prosperity Passport.",
+    why:
+      "Connecting Farcaster ties your social identity to your onchain reputation, helping programs discover real builders while keeping control in your hands.",
+    how: [
+      "Open CeloPG Passport.",
+      "Click the Farcaster Connection badge.",
+      "Scan the QR code from Warpcast to authorize linking.",
+      "Account linked — the badge turns complete.",
+    ],
+    tiers: [{ label: "Link your Farcaster account" }],
+    external: [{ label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" }],
+  },
 ];
-
-
-
 
 
 
