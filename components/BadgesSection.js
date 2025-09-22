@@ -322,9 +322,9 @@ const BADGES = [
     why:
       "Genesis reflects when you first joined the Celo network. Earlier creation dates signal long-term participation; newer dates welcome fresh builders to the ecosystem.",
     how: [
-      "Connect your wallet in Celo Lite.",
+      "Connect your wallet in Prosperity Passport.",
       "Your wallet’s creation/first-activity year is detected automatically.",
-      "The corresponding tier is shown; no extra action required.",
+      "The corresponding tier is shown; claim your badge.",
     ],
     tiers: [
       { label: "Wallet created in the year 2024" },
