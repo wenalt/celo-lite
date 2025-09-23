@@ -27,7 +27,7 @@ Celo Lite currently works as a clean **one‑click launcher** with a few helper 
 * **Ecosystem** – Jump to **USD Glo Dollar** and **Regen Atlas (retire Eco Credits)**.
 * **Routines** – Open **Layer3** and **claim \$G**.
 * **Builders Programs** – Shortcuts to **Goodbuilders R2**, **Proof of Ship**, **Proof of Impact**, and **Support Streams**.
-* **Badges** - in progress
+* **Badges** - Guide for each badge added.
 
 ### Helper features
 
