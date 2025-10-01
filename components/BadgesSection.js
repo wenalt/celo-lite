@@ -573,6 +573,32 @@ const BADGES = [
 
   // === Assets / Holdings ===
   {
+    id: "celo-vault-deposit",
+    title: "Celo Vault Deposit",
+    chain: "Celo",
+    image: "/badges/celovaultbadge.png",
+    summary:
+      "Deposit assets into the Celo Vault and have your position recognized in Prosperity Passport.",
+    why:
+      "Depositing into the Vault signals commitment to the Celo ecosystem and creates a simple, non-speculative onchain action that builds your Passport footprint.",
+    how: [
+      "Open Prosperity Passport and go to the Vault section.",
+      "Connect your wallet on Celo (CEL2).",
+      "Choose an asset and amount (e.g., cUSD/USDC.e) and confirm the deposit transaction.",
+      "Your deposit is detected and reflected as a badge tier in Passport.",
+    ],
+    tiers: [
+      { label: "Deposit ≥ $10 equivalent" },
+      { label: "Deposit ≥ $100 equivalent" },
+      { label: "Deposit ≥ $500 equivalent" },
+      { label: "Deposit ≥ $1,000 equivalent" },
+      { label: "Deposit ≥ $5,000 equivalent" },
+    ],
+    external: [
+      { label: "Open Prosperity Passport", href: "https://pass.celopg.eco/" },
+    ],
+  },
+  {
     id: "usdglo",
     title: "USD Glo Dollar",
     chain: "Celo",
@@ -598,13 +624,6 @@ const BADGES = [
     ],
   },
 ];
-
-
-
-
-
-
-
 
 export default function BadgesSection() {
   const data = useMemo(() => BADGES, []);
