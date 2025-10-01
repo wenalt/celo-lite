@@ -588,11 +588,11 @@ const BADGES = [
       "Your deposit is detected and reflected as a badge tier in Passport.",
     ],
     tiers: [
-      { label: "Deposit ≥ $10 equivalent" },
-      { label: "Deposit ≥ $100 equivalent" },
-      { label: "Deposit ≥ $500 equivalent" },
-      { label: "Deposit ≥ $1,000 equivalent" },
-      { label: "Deposit ≥ $5,000 equivalent" },
+      { label: "Deposit ≥ $10 equivalent for 7 days" },
+      { label: "Deposit ≥ $100 equivalent for 7 days" },
+      { label: "Deposit ≥ $500 equivalent for 7 days" },
+      { label: "Deposit ≥ $1,000 equivalent for 7 days" },
+      { label: "Deposit ≥ $5,000 equivalent for 30 days" },
     ],
     external: [
       { label: "Open Prosperity Passport", href: "https://pass.celopg.eco/" },
