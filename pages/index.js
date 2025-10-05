@@ -422,6 +422,9 @@ export default function Home() {
             <h2>Ecosystem</h2>
             <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
             <div className="btns">
+            <a className={BTN} href="https://www.celopg.eco/ecosystem" target="_blank" rel="noreferrer" title="CeloPG Ecosystem">
+                CeloPG Ecosystem
+              </a>
               <a className={BTN} href="https://www.glodollar.org/" target="_blank" rel="noreferrer" title="USD Glo Dollar">
                 USD Glo Dollar
               </a>
