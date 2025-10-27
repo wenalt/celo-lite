@@ -487,7 +487,7 @@ export default function Home() {
                 <span className="label">Support CeloPG</span>
               </a>
 
-              <a className="icon-link" href="https://guild.xyz/celo-communities" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
+              <a className="icon-link" href="https://era.guild.xyz/celo/" target="_blank" rel="noreferrer" title="Celo's Communities Guild">
                 <img src="/guild.jpg" alt="Guild" width="22" height="22" style={{ borderRadius: 6, display: "block" }} />
                 <span className="label">Celo's Communities Guild</span>
               </a>
