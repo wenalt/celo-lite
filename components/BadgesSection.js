@@ -211,7 +211,7 @@ const BADGES = [
       { label: "Champion Celorian" },
     ],
     external: [
-      { label: "Open Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+      { label: "Open Celo Communities Guild", href: "https://era.guild.xyz/celo/" },
     ],
   },
   {
@@ -229,7 +229,7 @@ const BADGES = [
     ],
     tiers: [{ label: "Be a Community Guild Lead" }],
     external: [
-      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+      { label: "Celo Communities Guild", href: "https://era.guild.xyz/celo/" },
       { label: "Celo Discord", href: "https://discord.gg/celo" },
     ],
   },
@@ -249,7 +249,7 @@ const BADGES = [
     tiers: [{ label: "Become a Celo Regional DAO Lead" }],
     external: [
       { label: "Celo Discord (communities)", href: "https://discord.gg/celo" },
-      { label: "Celo Communities Guild", href: "https://guild.xyz/celo-communities" },
+      { label: "Celo Communities Guild", href: "https://era.guild.xyz/celo/" },
     ],
   },
   {
