@@ -154,7 +154,7 @@ const BADGES = [
     title: "Self verification",
     chain: "Celo",
     image: "/badges/badgeself.png", // ou "/badges/badgeselff.png"
-    summary: "Verify your uniqueness with the Self Protocol (privacy-preserving).",
+    summary: "Verify your uniqueness with the Self Protocol (privacy-preserving). Additionally, Self launched a points campaign.",
     why:
       "Self uses zero-knowledge proofs to attest your uniqueness (and optionally your country) without exposing private data. This helps the ecosystem limit spam and strengthen on-chain reputation.",
     how: [
@@ -165,6 +165,7 @@ const BADGES = [
     ],
     tiers: [{ label: "Verify your Country via Self" }],
     external: [
+      { label: "Join Self", href: "https://referral.self.xyz/referral/0x4B741c1047419557D2d1Ac0014A723BBFa3Efcbb" },
       { label: "Self on Android", href: "https://play.google.com/store/apps/details?id=com.proofofpassportapp" },
       { label: "Self on iOS", href: "https://apps.apple.com/fr/app/self-zk-passport-identity/id6478563710" },
     ],
