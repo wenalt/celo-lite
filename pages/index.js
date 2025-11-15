@@ -438,7 +438,7 @@ export default function Home() {
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
               <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">CeloPG Prosperity Passport</a>
-              <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
+              <button className={BTN} onClick={() => setOpenSelf(true)}>Self Verification</button>
             </div>
           </section>
 
