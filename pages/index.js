@@ -458,7 +458,6 @@ export default function Home() {
               <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Staking on Mondo</a>
               <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Governance on Mondo</a>
             </div>
-            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
           {/* Routines */}
