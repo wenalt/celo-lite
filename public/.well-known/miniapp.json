@@ -1,8 +1,0 @@
-{
-  "id": "celo-lite",
-  "name": "Celo Lite",
-  "description": "Vote · Stake · Explore the Celo Prosperity ecosystem from Farcaster.",
-  "icon": "/icon.png",
-  "homepage": "https://celo-lite.vercel.app/",
-  "categories": ["utilities", "governance"]
-}
