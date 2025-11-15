@@ -32,7 +32,7 @@ const BADGES = [
       { label: "Vote on 30 Celo Proposal" },
     ],
     external: [
-      { label: "Open Mondo Governance", href: "https://mondo.celo.org/governance" },
+      { label: "Mondo Governance", href: "https://mondo.celo.org/governance" },
     ],
   },
   {
@@ -70,8 +70,8 @@ const BADGES = [
       { label: "Contributed to Celo Governance in Season 0" },
     ],
     external: [
-      { label: "Open CeloPG", href: "https://celopg.eco" },
-      { label: "Open CeloPG Passport", href: "https://pass.celopg.eco" },
+      { label: "CeloPG", href: "https://celopg.eco" },
+      { label: "CeloPG Passport", href: "https://pass.celopg.eco" },
     ],
   },
 
@@ -98,7 +98,7 @@ const BADGES = [
       { label: "500 transactions on CEL2" },
     ],
     external: [
-      { label: "Open Layer3", href: "https://app.layer3.xyz/search?chainIds=42220" },
+      { label: "Layer3", href: "https://app.layer3.xyz/search?chainIds=42220" },
     ],
   },
   {
@@ -212,7 +212,7 @@ const BADGES = [
       { label: "Champion Celorian" },
     ],
     external: [
-      { label: "Open Celo Communities Guild", href: "https://era.guild.xyz/celo/" },
+      { label: "Celo Communities Guild", href: "https://era.guild.xyz/celo/" },
     ],
   },
   {
@@ -421,7 +421,7 @@ const BADGES = [
       { label: "Have a Builder score above 80" },
     ],
     external: [
-      { label: "Open Talent Protocol", href: "https://app.talentprotocol.com/" },
+      { label: "Talent Protocol", href: "https://app.talentprotocol.com/" },
     ],
   },
 
@@ -474,7 +474,7 @@ const BADGES = [
       { label: "Donate $1000 more on Gitcoin" },
     ],
     external: [
-      { label: "Open Gitcoin Grants", href: "https://grants.gitcoin.co/" },
+      { label: "Gitcoin Grants", href: "https://grants.gitcoin.co/" },
     ],
   },
   {
@@ -498,7 +498,7 @@ const BADGES = [
       { label: "Donate $1000 more on Giveth" },
     ],
     external: [
-      { label: "Open Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
+      { label: "Giveth Projects (Celo)", href: "https://giveth.io/projects/all?filter=AcceptFundOnCelo" },
     ],
   },
 
@@ -596,7 +596,7 @@ const BADGES = [
       { label: "Deposit ≥ $5,000 equivalent for 30 days" },
     ],
     external: [
-      { label: "Open Prosperity Passport", href: "https://pass.celopg.eco/" },
+      { label: "Prosperity Passport", href: "https://pass.celopg.eco/" },
     ],
   },
   {
@@ -620,8 +620,8 @@ const BADGES = [
       { label: "Held > $5000 USDGLO for more than 28 days" },
     ],
     external: [
-      { label: "Open Glo Dollar", href: "https://www.glodollar.org/" },
-      { label: "Open CeloPG", href: "https://celopg.eco" },
+      { label: "Glo Dollar", href: "https://www.glodollar.org/" },
+      { label: "CeloPG", href: "https://celopg.eco" },
     ],
   },
 ];
