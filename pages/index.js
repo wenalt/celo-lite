@@ -420,16 +420,34 @@ export default function Home() {
           {/* Ecosystem */}
           <section className={CARD}>
             <h2>Ecosystem</h2>
-            <p>Explore impact apps on Celo: real-world stable value & climate action.</p>
+            <p>Explore core identity & impact apps in the Celo ecosystem.</p>
             <div className="btns">
-            <a className={BTN} href="https://www.celopg.eco/ecosystem" target="_blank" rel="noreferrer" title="CeloPG Ecosystem">
+              <a
+                className={BTN}
+                href="https://names.celo.org/"
+                target="_blank"
+                rel="noreferrer"
+                title="Celo Names"
+              >
+                Celo Names
+              </a>
+              <a
+                className={BTN}
+                href="https://www.celopg.eco/ecosystem"
+                target="_blank"
+                rel="noreferrer"
+                title="CeloPG Ecosystem"
+              >
                 CeloPG Ecosystem
               </a>
-              <a className={BTN} href="https://www.glodollar.org/" target="_blank" rel="noreferrer" title="USD Glo Dollar">
-                USD Glo Dollar
-              </a>
-              <a className={BTN} href="https://www.regenatlas.xyz/assets/91efab48-decc-46ac-bc7b-c2ec7c272548" target="_blank" rel="noreferrer" title="Retire Eco Credits on Regen Atlas">
-                Retire Eco Credits (Regen Atlas)
+              <a
+                className={BTN}
+                href="https://celo.org/ecosystem"
+                target="_blank"
+                rel="noreferrer"
+                title="Celo Ecosystem"
+              >
+                Celo Ecosystem
               </a>
             </div>
           </section>
