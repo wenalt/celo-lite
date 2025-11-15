@@ -185,7 +185,10 @@ const BADGES = [
       "Account linked — the badge turns complete.",
     ],
     tiers: [{ label: "Link your Farcaster account" }],
-    external: [{ label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" }],
+    external: [
+      { label: "Join Farcaster", href: "https://farcaster.xyz/~/code/S8HZ19" },
+      { label: "Open CeloPG Passport", href: "https://pass.celopg.eco/" },
+    ],
   },
 
   // === Community & Roles ===
