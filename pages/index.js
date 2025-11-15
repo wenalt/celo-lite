@@ -388,35 +388,6 @@ export default function Home() {
             )}
           </section>
 
-          {/* Governance */}
-          <section className={CARD}>
-            <h2>Governance</h2>
-            <p>Get voting power by staking on a validator, then participate in proposals.</p>
-            <div className="btns">
-              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Open Mondo</a>
-              <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Browse Governance</a>
-            </div>
-            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
-          </section>
-
-          {/* Prosperity Passport */}
-          <section className={CARD}>
-            <h2>Prosperity Passport</h2>
-            <p>Track your onchain footprint across Celo and unlock recognition.</p>
-            <div className="btns">
-              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG Prosperity Passport</a>
-              <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
-            </div>
-          </section>
-
-          {openSelf && (
-            <SelfVerificationDialog
-              open={openSelf}
-              onClose={() => setOpenSelf(false)}
-              userAddress={address}
-            />
-          )}
-
           {/* Ecosystem */}
           <section className={CARD}>
             <h2>Ecosystem</h2>
@@ -450,6 +421,35 @@ export default function Home() {
                 Celo Ecosystem
               </a>
             </div>
+          </section>
+
+          {/* Prosperity Passport */}
+          <section className={CARD}>
+            <h2>Prosperity Passport</h2>
+            <p>Track your onchain footprint across Celo and unlock recognition.</p>
+            <div className="btns">
+              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG Prosperity Passport</a>
+              <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
+            </div>
+          </section>
+
+          {openSelf && (
+            <SelfVerificationDialog
+              open={openSelf}
+              onClose={() => setOpenSelf(false)}
+              userAddress={address}
+            />
+          )}
+
+          {/* Governance */}
+          <section className={CARD}>
+            <h2>Governance</h2>
+            <p>Get voting power by staking on a validator, then participate in proposals.</p>
+            <div className="btns">
+              <a className={BTN} href="https://mondo.celo.org/" target="_blank" rel="noreferrer">Staking on Mondo</a>
+              <a className={BTN} href="https://mondo.celo.org/governance" target="_blank" rel="noreferrer">Governance on Mondo</a>
+            </div>
+            <p className="hint">opens in the embedded browser — you’ll use <b>your</b> EVM wallet.</p>
           </section>
 
           {/* Routines */}
