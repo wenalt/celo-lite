@@ -437,7 +437,7 @@ export default function Home() {
             <h2>Prosperity Passport</h2>
             <p>Track your onchain footprint across Celo and unlock recognition.</p>
             <div className="btns">
-              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">Open CeloPG Prosperity Passport</a>
+              <a className={BTN} href="https://pass.celopg.eco/" target="_blank" rel="noreferrer">CeloPG Prosperity Passport</a>
               <button className={BTN} onClick={() => setOpenSelf(true)}>Self.xyz Verification</button>
             </div>
           </section>
@@ -471,7 +471,7 @@ export default function Home() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Open Layer3 Quests
+                Layer3 Quests
               </a>
               <a
                 className={BTN}
