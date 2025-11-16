@@ -24,6 +24,7 @@
     "@tanstack/react-query": "latest",
 
     "@farcaster/miniapp-sdk": "latest",
+    "@farcaster/miniapp-wagmi-connector": "latest",
     "@selfxyz/core": "*",
     "@selfxyz/qrcode": "*",
     "ethers": "*",
@@ -31,7 +32,6 @@
     "@vercel/analytics": "^1.2.2"
   }
 }
-
 
 
 
