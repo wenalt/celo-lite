@@ -22,12 +22,12 @@ const metadata = {
 };
 
 // ✅ Liste des réseaux supportés par l’app (CRUCIAL)
-const networks = [celo];
+export const networks = [celo];
 
 // Adapter Wagmi pour AppKit (ssr: true pour Next.js pages/SSR)
-const wagmiAdapter = new WagmiAdapter({
+export const wagmiAdapter = new WagmiAdapter({
   projectId,
-  networks,   // <-- indispensable
+  networks, // <-- indispensable
   ssr: true,
 });
 
@@ -35,9 +35,14 @@ const wagmiAdapter = new WagmiAdapter({
 createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks,   // <-- indispensable
+  networks, // <-- indispensable
   metadata,
-  // features: { email: false } // (optionnel)
+  // ✅ IMPORTANT : on désactive les logins sociaux (dont Farcaster)
+  features: {
+    email: false,
+    socials: [], // <- plus de "Sign in with Farcaster"
+    // analytics: true, // optionnel
+  },
 });
 
 const queryClient = new QueryClient();
