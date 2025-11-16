@@ -287,7 +287,31 @@ export default function Home() {
         signer
       );
 
-      const tx = await writeContract.checkIn();
+      let tx;
+      try {
+        // tentative normale (avec estimateGas)
+        tx = await writeContract.checkIn();
+      } catch (errTx) {
+        console.error("checkIn() with estimateGas failed, retrying raw tx", errTx);
+        // fallback : bypass estimateGas (CALL_EXCEPTION / UNPREDICTABLE_GAS_LIMIT)
+        if (
+          errTx?.code === "CALL_EXCEPTION" ||
+          errTx?.code === "UNPREDICTABLE_GAS_LIMIT"
+        ) {
+          const iface = new ethers.Interface(DailyCheckinABI);
+          const data = iface.encodeFunctionData("checkIn", []);
+          const from = await signer.getAddress();
+          tx = await signer.sendTransaction({
+            to: CHECKIN_ADDR,
+            from,
+            data,
+            gasLimit: 250000n, // gas fixe raisonnable pour un petit check-in
+          });
+        } else {
+          throw errTx;
+        }
+      }
+
       await tx.wait();
       await loadCheckin();
     } catch (e) {
