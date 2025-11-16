@@ -312,7 +312,22 @@ export default function Home() {
         }
       }
 
-      await tx.wait();
+      // attente de la confirmation :
+      try {
+        // 1) essayer tx.wait() (fonctionne en web classique)
+        await tx.wait();
+      } catch (waitErr) {
+        console.error("tx.wait failed, fallback to RPC waitForTransaction", waitErr);
+        // 2) fallback : utiliser le RPC Celo qui supporte eth_getTransactionReceipt
+        try {
+          const rpc = new ethers.JsonRpcProvider(CELO_RPC);
+          await rpc.waitForTransaction(tx.hash);
+        } catch (rpcErr) {
+          console.error("RPC waitForTransaction also failed", rpcErr);
+          // on ne rethrow pas, on tente quand même de recharger l’état
+        }
+      }
+
       await loadCheckin();
     } catch (e) {
       console.error(e);
@@ -824,7 +839,7 @@ export default function Home() {
                   fill="#2AABEE"
                   aria-hidden
                 >
-                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9 .2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
                 </svg>
                 <span className="label">Self's support Telegram</span>
               </a>
