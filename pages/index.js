@@ -37,6 +37,11 @@ const CHECKIN_ADDR =
   process.env.NEXT_PUBLIC_CHECKIN_ADDRESS ||
   "0x8C654199617927a1F8218023D9c5bec42605a451";
 
+// NEW: RewardDistributor (cashback 0.1 CELO)
+const REWARD_DISTRIBUTOR_ADDR =
+  process.env.NEXT_PUBLIC_REWARD_DISTRIBUTOR_ADDRESS ||
+  "0x840AD8Ea35a8d155fa58f0122D03b1f92c788d0e";
+
 // --- utils ---
 function formatSecs(s) {
   const n = Number(s || 0);
@@ -327,6 +332,61 @@ export default function Home() {
           // on ne rethrow pas, on tente quand même de recharger l’état
         }
       }
+
+      // === NEW: cashback 0.1 CELO via RewardDistributor ===
+      try {
+        if (address && REWARD_DISTRIBUTOR_ADDR) {
+          const resp = await fetch("/api/checkin-reward", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address }),
+          });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            console.error("checkin-reward backend error", err);
+          } else {
+            const reward = await resp.json();
+
+            if (reward?.signature && reward?.amount && reward?.nonce) {
+              const iface = new ethers.Interface([
+                "function claim(uint256 amount,uint256 nonce,bytes signature)",
+              ]);
+
+              const data = iface.encodeFunctionData("claim", [
+                reward.amount, // 0.1 CELO en wei (string)
+                BigInt(reward.nonce), // ex: 20251118n
+                reward.signature,
+              ]);
+
+              const from = await signer.getAddress();
+              const claimTx = await signer.sendTransaction({
+                to: REWARD_DISTRIBUTOR_ADDR,
+                from,
+                data,
+              });
+
+              try {
+                await claimTx.wait();
+              } catch (e) {
+                console.error("claim wait failed", e);
+              }
+
+              console.log(
+                "Check-in reward claimed:",
+                reward.amount,
+                "nonce",
+                reward.nonce,
+                "tx",
+                claimTx.hash
+              );
+            }
+          }
+        }
+      } catch (rewardErr) {
+        console.error("Failed to claim check-in reward", rewardErr);
+      }
+      // === end NEW ===
 
       await loadCheckin();
     } catch (e) {
