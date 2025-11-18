@@ -1,8 +1,15 @@
 // pages/api/checkin-reward.js
 import { Wallet, ethers } from "ethers";
+import { Errors, createClient } from "@farcaster/quick-auth";
 
 const CONTRACT_ADDRESS = "0x840AD8Ea35a8d155fa58f0122D03b1f92c788d0e";
-const CHAIN_ID = 42220; // Celo mainnet
+const CHAIN_ID = 42220;
+
+// Domaine de la mini app (doit matcher ton déploiement prod)
+const MINIAPP_DOMAIN =
+  process.env.NEXT_PUBLIC_MINIAPP_DOMAIN || "celo-lite.vercel.app";
+
+const quickAuthClient = createClient();
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -18,23 +25,49 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { address } = req.body || {};
+    // 1) Vérifier le token Quick Auth (Mini App only)
+    const authHeader =
+      req.headers.authorization || req.headers.Authorization || null;
 
+    if (!authHeader || typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing QuickAuth token" });
+    }
+
+    const token = authHeader.slice("Bearer ".length).trim();
+
+    let payload;
+    try {
+      payload = await quickAuthClient.verifyJwt({
+        token,
+        domain: MINIAPP_DOMAIN,
+      });
+    } catch (e) {
+      if (e instanceof Errors.InvalidTokenError) {
+        console.info("Invalid QuickAuth token:", e.message);
+        return res.status(401).json({ error: "Invalid QuickAuth token" });
+      }
+      throw e;
+    }
+
+    const fid = payload.sub; // FID authentifié (utile plus tard pour 1 fid = 1 wallet)
+
+    const { address } = req.body || {};
     if (!address || typeof address !== "string") {
       return res.status(400).json({ error: "Missing or invalid address" });
     }
 
-    // petite validation très simple de l'address
     if (!address.startsWith("0x") || address.length !== 42) {
       return res.status(400).json({ error: "Invalid address format" });
     }
 
+    // TODO plus tard: vérifier que `address` correspond bien au primary address du FID si tu veux
+
     // Montant fixe : 0.1 CELO par check-in
     const amount = ethers.parseEther("0.1");
 
-    // 🗓 Nonce basé sur le jour (ex: 20251118)
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // "YYYYMMDD"
-    const nonce = BigInt(today); // ex: 20251118n
+    // Nonce basé sur le jour (ex: 20251118)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const nonce = BigInt(today);
 
     // Doit matcher exactement le Solidity:
     // keccak256(abi.encodePacked(msg.sender, amount, nonce, chainid, address(this)))
@@ -52,6 +85,7 @@ export default async function handler(req, res) {
       nonce: nonce.toString(),
       messageHash,
       signature,
+      fid, // bonus, si tu veux logger côté front
     });
   } catch (e) {
     console.error("checkin-reward error:", e);
