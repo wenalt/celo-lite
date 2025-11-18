@@ -333,16 +333,29 @@ export default function Home() {
         }
       }
 
-      // === NEW: cashback 0.1 CELO via RewardDistributor ===
+      // === NEW: cashback 0.1 CELO via RewardDistributor (Mini App only, QuickAuth) ===
       try {
         if (address && REWARD_DISTRIBUTOR_ADDR) {
-          const resp = await fetch("/api/checkin-reward", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ address }),
-          });
+          let resp = null;
 
-          if (!resp.ok) {
+          try {
+            // En Mini App, sdk.quickAuth.fetch ajoute automatiquement le Bearer token
+            resp = await sdk.quickAuth.fetch("/api/checkin-reward", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ address }),
+            });
+          } catch (qaErr) {
+            // En dehors d'une Mini App (web classique), QuickAuth n'est pas dispo → pas de cashback
+            console.warn(
+              "QuickAuth not available, skipping reward (likely web, not Farcaster Mini App)",
+              qaErr
+            );
+          }
+
+          if (!resp) {
+            console.log("No QuickAuth response, no cashback this time.");
+          } else if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
             console.error("checkin-reward backend error", err);
           } else {
@@ -863,7 +876,7 @@ export default function Home() {
                   fill="#2AABEE"
                   aria-hidden
                 >
-                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9.2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
+                  <path d="M9.6 16.8l.3-4.3 7.8-7.2c.3-.3-.1-.5-.4-.4L6.9 11.7 2.6 10.3c-.9-.3-.9-.9 .2-1.3L20.7 3c.8-.3 1.5.2 1.2 1.5l-2.9 13.6c-.2.9-.8 1.2-1.6.8l-4.4-3.3-2.2 1.2c-.2.1-.4 0-.4-.2z" />
                 </svg>
                 <span className="label">Support CeloPG</span>
               </a>
