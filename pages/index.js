@@ -115,6 +115,9 @@ export default function Home() {
   const [ciBusy, setCiBusy] = useState(false);
   const [ciError, setCiError] = useState(null);
 
+  // NEW: état pour le bouton Reward (évite double click)
+  const [rewardBusy, setRewardBusy] = useState(false);
+
   // ready() Mini App
   useEffect(() => {
     (async () => {
@@ -244,6 +247,88 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, isOnCelo]);
 
+  // === NEW: helper pour le cashback (ré-utilisé par check-in + bouton Reward) ===
+  async function claimReward(passedSigner) {
+    if (!address || !REWARD_DISTRIBUTOR_ADDR) return;
+
+    try {
+      setRewardBusy(true);
+
+      let signer = passedSigner;
+      if (!signer) {
+        try {
+          signer = await getEthersSigner(walletClient);
+        } catch (e) {
+          console.error("No signer for reward claim", e);
+          return;
+        }
+      }
+
+      // Important: on limite le cashback au Farcaster Mini App via QuickAuth
+      let resp;
+      try {
+        resp = await sdk.quickAuth.fetch("/api/checkin-reward", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address }),
+        });
+      } catch (qaErr) {
+        console.warn(
+          "QuickAuth not available, reward only works inside Farcaster Mini App.",
+          qaErr
+        );
+        return;
+      }
+
+      if (!resp?.ok) {
+        const err = (await resp?.json?.().catch(() => ({}))) || {};
+        console.error("checkin-reward backend error", err);
+        return;
+      }
+
+      const reward = await resp.json();
+
+      if (reward?.signature && reward?.amount && reward?.nonce) {
+        const iface = new ethers.Interface([
+          "function claim(uint256 amount,uint256 nonce,bytes signature)",
+        ]);
+
+        const data = iface.encodeFunctionData("claim", [
+          reward.amount,
+          BigInt(reward.nonce),
+          reward.signature,
+        ]);
+
+        const from = await signer.getAddress();
+        const claimTx = await signer.sendTransaction({
+          to: REWARD_DISTRIBUTOR_ADDR,
+          from,
+          data,
+        });
+
+        try {
+          await claimTx.wait();
+        } catch (e) {
+          console.error("claim wait failed", e);
+        }
+
+        console.log(
+          "Check-in reward claimed:",
+          reward.amount,
+          "nonce",
+          reward.nonce,
+          "tx",
+          claimTx.hash
+        );
+      }
+    } catch (rewardErr) {
+      console.error("Failed to claim check-in reward", rewardErr);
+    } finally {
+      setRewardBusy(false);
+    }
+  }
+  // === end NEW helper ===
+
   // write: check-in (user-pays)
   async function doCheckin() {
     try {
@@ -333,73 +418,8 @@ export default function Home() {
         }
       }
 
-      // === NEW: cashback 0.1 CELO via RewardDistributor (Mini App only, QuickAuth) ===
-      try {
-        if (address && REWARD_DISTRIBUTOR_ADDR) {
-          let resp = null;
-
-          try {
-            // En Mini App, sdk.quickAuth.fetch ajoute automatiquement le Bearer token
-            resp = await sdk.quickAuth.fetch("/api/checkin-reward", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ address }),
-            });
-          } catch (qaErr) {
-            // En dehors d'une Mini App (web classique), QuickAuth n'est pas dispo → pas de cashback
-            console.warn(
-              "QuickAuth not available, skipping reward (likely web, not Farcaster Mini App)",
-              qaErr
-            );
-          }
-
-          if (!resp) {
-            console.log("No QuickAuth response, no cashback this time.");
-          } else if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            console.error("checkin-reward backend error", err);
-          } else {
-            const reward = await resp.json();
-
-            if (reward?.signature && reward?.amount && reward?.nonce) {
-              const iface = new ethers.Interface([
-                "function claim(uint256 amount,uint256 nonce,bytes signature)",
-              ]);
-
-              const data = iface.encodeFunctionData("claim", [
-                reward.amount, // 0.1 CELO en wei (string)
-                BigInt(reward.nonce), // ex: 20251118n
-                reward.signature,
-              ]);
-
-              const from = await signer.getAddress();
-              const claimTx = await signer.sendTransaction({
-                to: REWARD_DISTRIBUTOR_ADDR,
-                from,
-                data,
-              });
-
-              try {
-                await claimTx.wait();
-              } catch (e) {
-                console.error("claim wait failed", e);
-              }
-
-              console.log(
-                "Check-in reward claimed:",
-                reward.amount,
-                "nonce",
-                reward.nonce,
-                "tx",
-                claimTx.hash
-              );
-            }
-          }
-        }
-      } catch (rewardErr) {
-        console.error("Failed to claim check-in reward", rewardErr);
-      }
-      // === end NEW ===
+      // NEW: cashback auto après check-in (uniquement Mini App via QuickAuth)
+      await claimReward(signer);
 
       await loadCheckin();
     } catch (e) {
@@ -407,6 +427,20 @@ export default function Home() {
       setCiError(e?.message || "Check-in failed.");
     } finally {
       setCiBusy(false);
+    }
+  }
+
+  // NEW: bouton “Share on Farcaster” (cast pré-rempli)
+  async function handleShare() {
+    try {
+      const text =
+        "I’m keeping my onchain activity alive with daily check-ins on Celo Lite 🚀\n\nOpen the Celo Lite mini app and try it yourself:";
+      await sdk.actions.composeCast({
+        text,
+        embeds: ["https://celo-lite.vercel.app"],
+      });
+    } catch (e) {
+      console.error("composeCast failed", e);
     }
   }
 
@@ -574,57 +608,88 @@ export default function Home() {
                   {S1_START_LABEL}.
                 </p>
 
-                {/* Daily check-in */}
+                {/* Daily check-in + Reward */}
                 {CHECKIN_ADDR ? (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 10,
-                      justifyContent: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
-                      className={BTN}
-                      onClick={doCheckin}
-                      disabled={
-                        ciBusy || !isOnCelo || Number(ciLeft || 0) > 0
-                      }
-                      title={
-                        !isOnCelo
-                          ? "Switch to Celo to use check-in"
-                          : Number(ciLeft || 0) > 0
-                          ? `Cooldown: ${formatSecs(ciLeft)}`
-                          : "Daily check-in"
-                      }
-                    >
-                      {ciBusy ? "Checking-in…" : "Daily check-in"}
-                    </button>
+                  <>
                     <div
                       style={{
-                        fontSize: 13,
-                        color: "var(--muted)",
-                        alignSelf: "center",
+                        marginTop: 12,
+                        display: "flex",
+                        gap: 10,
+                        justifyContent: "center",
+                        flexWrap: "wrap",
                       }}
                     >
-                      {ciError ? (
-                        <span
-                          style={{
-                            color: "#b91c1c",
-                            fontWeight: 600,
-                          }}
+                      <button
+                        className={BTN}
+                        onClick={doCheckin}
+                        disabled={
+                          ciBusy || !isOnCelo || Number(ciLeft || 0) > 0
+                        }
+                        title={
+                          !isOnCelo
+                            ? "Switch to Celo to use check-in"
+                            : Number(ciLeft || 0) > 0
+                            ? `Cooldown: ${formatSecs(ciLeft)}`
+                            : "Daily check-in"
+                        }
+                      >
+                        {ciBusy ? "Checking-in…" : "Daily check-in"}
+                      </button>
+
+                      {REWARD_DISTRIBUTOR_ADDR ? (
+                        <button
+                          className={BTN}
+                          onClick={() => claimReward()}
+                          disabled={rewardBusy || !isOnCelo}
+                          title={
+                            !isOnCelo
+                              ? "Switch to Celo to claim reward"
+                              : "Retry cashback claim"
+                          }
                         >
-                          {ciError}
-                        </span>
-                      ) : (
-                        <>
-                          total: {ciCount ?? "…"} · next:{" "}
-                          {ciLeft == null ? "…" : formatSecs(ciLeft)}
-                        </>
-                      )}
+                          {rewardBusy ? "Claiming…" : "Reward"}
+                        </button>
+                      ) : null}
+
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "var(--muted)",
+                          alignSelf: "center",
+                        }}
+                      >
+                        {ciError ? (
+                          <span
+                            style={{
+                              color: "#b91c1c",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {ciError}
+                          </span>
+                        ) : (
+                          <>
+                            total: {ciCount ?? "…"} · next:{" "}
+                            {ciLeft == null ? "…" : formatSecs(ciLeft)}
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
+
+                    {/* NEW: Share on Farcaster */}
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <button className={BTN} onClick={handleShare}>
+                        Share on Farcaster
+                      </button>
+                    </div>
+                  </>
                 ) : null}
               </>
             ) : (
