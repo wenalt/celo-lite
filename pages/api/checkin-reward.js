@@ -29,7 +29,11 @@ export default async function handler(req, res) {
     const authHeader =
       req.headers.authorization || req.headers.Authorization || null;
 
-    if (!authHeader || typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
+    if (
+      !authHeader ||
+      typeof authHeader !== "string" ||
+      !authHeader.startsWith("Bearer ")
+    ) {
       return res.status(401).json({ error: "Missing QuickAuth token" });
     }
 
@@ -49,7 +53,15 @@ export default async function handler(req, res) {
       throw e;
     }
 
-    const fid = payload.sub; // FID authentifié (utile plus tard pour 1 fid = 1 wallet)
+    // FID authentifié (1 FID = identité unique)
+    const fidRaw = payload.sub;
+    const fidStr = String(fidRaw || "").trim();
+    if (!fidStr || !/^\d+$/.test(fidStr)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid Farcaster FID in QuickAuth payload" });
+    }
+    const fidBig = BigInt(fidStr);
 
     const { address } = req.body || {};
     if (!address || typeof address !== "string") {
@@ -65,9 +77,13 @@ export default async function handler(req, res) {
     // Montant fixe : 0.1 CELO par check-in
     const amount = ethers.parseEther("0.1");
 
-    // Nonce basé sur le jour (ex: 20251118)
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const nonce = BigInt(today);
+    // --- NOUVEAU SCHÉMA DE NONCE ---
+    // todayStr reste lisible (ex: "20251118")
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const todayBig = BigInt(todayStr); // 20251118n
+    // nonce = fid * 1_000_000 + YYYYMMDD => 1 reward par FID et par jour
+    const nonce = fidBig * 1_000_000n + todayBig;
+    // -------------------------------
 
     // Doit matcher exactement le Solidity:
     // keccak256(abi.encodePacked(msg.sender, amount, nonce, chainid, address(this)))
@@ -85,7 +101,8 @@ export default async function handler(req, res) {
       nonce: nonce.toString(),
       messageHash,
       signature,
-      fid, // bonus, si tu veux logger côté front
+      fid: fidStr,      // utile pour logs front
+      today: todayStr,  // info bonus (jour utilisé)
     });
   } catch (e) {
     console.error("checkin-reward error:", e);
