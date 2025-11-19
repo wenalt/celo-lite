@@ -314,11 +314,35 @@ export default function Home() {
         ]);
 
         const from = await signer.getAddress();
-        const claimTx = await signer.sendTransaction({
-          to: REWARD_DISTRIBUTOR_ADDR,
-          from,
-          data,
-        });
+
+        let claimTx;
+        try {
+          // tentative normale (avec estimateGas interne)
+          claimTx = await signer.sendTransaction({
+            to: REWARD_DISTRIBUTOR_ADDR,
+            from,
+            data,
+          });
+        } catch (errTx) {
+          console.error(
+            "claim() sendTransaction failed, retrying with fixed gasLimit",
+            errTx
+          );
+          // fallback : on bypass l'estimateGas qui pose problème dans Farcaster wallet
+          if (
+            errTx?.code === "CALL_EXCEPTION" ||
+            errTx?.code === "UNPREDICTABLE_GAS_LIMIT"
+          ) {
+            claimTx = await signer.sendTransaction({
+              to: REWARD_DISTRIBUTOR_ADDR,
+              from,
+              data,
+              gasLimit: 200000n, // largement suffisant pour un simple transfert + checks
+            });
+          } else {
+            throw errTx;
+          }
+        }
 
         try {
           await claimTx.wait();
@@ -457,7 +481,7 @@ export default function Home() {
   async function handleShare() {
     try {
       const text =
-        "Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
+"Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
         "• Daily onchain check-in\n" +
         "• 0.1 CELO daily reward (inside Farcaster mini app)\n\n" +
         "Open it on Farcaster: https://farcaster.xyz/miniapps/ma3mvR7DIRs3/celo-lite";
