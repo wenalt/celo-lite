@@ -118,8 +118,16 @@ export default function Home() {
   // NEW: état pour le bouton Reward (évite double click)
   const [rewardBusy, setRewardBusy] = useState(false);
 
+  // NEW: savoir si la reward a été claim aujourd’hui (UI)
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+
   // NEW: savoir si on est vraiment dans une Mini App Farcaster
   const [isMiniApp, setIsMiniApp] = useState(false);
+
+  // reset rewardClaimed si l’adresse change
+  useEffect(() => {
+    setRewardClaimed(false);
+  }, [address]);
 
   // ready() Mini App + détection Mini App
   useEffect(() => {
@@ -358,6 +366,9 @@ export default function Home() {
           "tx",
           claimTx.hash
         );
+
+        // ✅ reward claimée → on met à jour l’UI
+        setRewardClaimed(true);
       }
     } catch (rewardErr) {
       console.error("Failed to claim check-in reward", rewardErr);
@@ -481,7 +492,7 @@ export default function Home() {
   async function handleShare() {
     try {
       const text =
-"Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
+        "Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
         "• Daily onchain check-in\n" +
         "• 0.1 CELO daily reward (inside Farcaster mini app)\n\n" +
         "Open it on Farcaster: https://farcaster.xyz/miniapps/ma3mvR7DIRs3/celo-lite";
@@ -691,15 +702,21 @@ export default function Home() {
                         <button
                           className={BTN}
                           onClick={() => claimReward()}
-                          disabled={rewardBusy || !isOnCelo}
+                          disabled={
+                            rewardBusy || !isOnCelo || rewardClaimed
+                          }
                           title={
                             !isOnCelo
                               ? "Switch to Celo to claim reward"
-                              : "Retry cashback claim"
+                              : rewardClaimed
+                              ? "Daily reward already claimed"
+                              : "Claim daily cashback"
                           }
                         >
                           {rewardBusy
                             ? "Claiming…"
+                            : rewardClaimed
+                            ? "Daily reward claimed"
                             : "Daily reward: 0.1 $CELO"}
                         </button>
                       ) : null}
@@ -729,8 +746,8 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* NEW: Share on Farcaster (Mini App only) */}
-                    {isMiniApp && (
+                    {/* NEW: Share on Farcaster (Mini App only, après reward) */}
+                    {isMiniApp && rewardClaimed && (
                       <div
                         style={{
                           marginTop: 10,
@@ -1183,3 +1200,4 @@ export default function Home() {
     </>
   );
 }
+
