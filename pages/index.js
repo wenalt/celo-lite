@@ -457,10 +457,13 @@ export default function Home() {
   async function handleShare() {
     try {
       const text =
-        "I’m keeping my onchain activity alive with daily check-ins on Celo Lite 🚀\n\nOpen the Celo Lite mini app and try it yourself:";
+        "Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
+        "• Daily onchain check-in\n" +
+        "• 0.1 CELO daily reward (inside Farcaster mini app)\n\n" +
+        "Open it on Farcaster: https://farcaster.xyz/miniapps/ma3mvR7DIRs3/celo-lite";
       await sdk.actions.composeCast({
         text,
-        embeds: ["https://celo-lite.vercel.app"],
+        embeds: ["https://farcaster.xyz/miniapps/ma3mvR7DIRs3/celo-lite"],
       });
     } catch (e) {
       console.error("composeCast failed", e);
