@@ -118,16 +118,20 @@ export default function Home() {
   // NEW: état pour le bouton Reward (évite double click)
   const [rewardBusy, setRewardBusy] = useState(false);
 
-  // NEW: savoir si on est dans la Mini App Farcaster
+  // NEW: savoir si on est vraiment dans une Mini App Farcaster
   const [isMiniApp, setIsMiniApp] = useState(false);
 
-  // ready() Mini App
+  // ready() Mini App + détection Mini App
   useEffect(() => {
     (async () => {
       try {
-        await sdk.actions.ready();
-        setIsMiniApp(true);
-      } catch {
+        const mini = await sdk.isInMiniApp();
+        setIsMiniApp(!!mini);
+        if (mini) {
+          await sdk.actions.ready();
+        }
+      } catch (e) {
+        console.warn("Mini App detection failed, assuming web mode", e);
         setIsMiniApp(false);
       }
     })();
@@ -255,6 +259,11 @@ export default function Home() {
 
   // === NEW: helper pour le cashback (ré-utilisé par check-in + bouton Reward) ===
   async function claimReward(passedSigner) {
+    // Rewards strictement limitées à la Mini App Farcaster
+    if (!isMiniApp) {
+      console.log("Daily rewards are only available inside the Farcaster Mini App.");
+      return;
+    }
     if (!address || !REWARD_DISTRIBUTOR_ADDR) return;
 
     try {
@@ -270,7 +279,6 @@ export default function Home() {
         }
       }
 
-      // Important: on limite le cashback au Farcaster Mini App via QuickAuth
       let resp;
       try {
         resp = await sdk.quickAuth.fetch("/api/checkin-reward", {
@@ -280,7 +288,7 @@ export default function Home() {
         });
       } catch (qaErr) {
         console.warn(
-          "QuickAuth not available, reward only works inside Farcaster Mini App.",
+          "QuickAuth call failed (reward only works in Mini App with QuickAuth configured).",
           qaErr
         );
         return;
@@ -340,22 +348,31 @@ export default function Home() {
     try {
       setCiBusy(true);
       setCiError(null);
+
+      // Gestion du switch de réseau :
       if (!isOnCelo) {
-        // on propose un switch “doux” via EIP-1193 si possible
-        try {
-          const req =
-            walletClient?.transport?.request ||
-            (typeof window !== "undefined" &&
-              window.ethereum?.request);
-          if (req) {
-            await req({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: "0xa4ec" /* 42220 */ }],
-            });
+        if (!isMiniApp) {
+          // Sur le web, on essaie d'aider en switchant automatiquement
+          try {
+            const req =
+              walletClient?.transport?.request ||
+              (typeof window !== "undefined" &&
+                window.ethereum?.request);
+            if (req) {
+              await req({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0xa4ec" /* 42220 */ }],
+              });
+            }
+          } catch (e) {
+            setCiBusy(false);
+            setCiError("Please switch to Celo Mainnet.");
+            return;
           }
-        } catch (e) {
+        } else {
+          // Dans la Mini App, pas de popup agressif: juste un message
           setCiBusy(false);
-          setCiError("Please switch to Celo Mainnet.");
+          setCiError("Switch to Celo Mainnet in your Farcaster wallet.");
           return;
         }
       }
@@ -440,11 +457,7 @@ export default function Home() {
   async function handleShare() {
     try {
       const text =
-        "Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
-        "• Daily onchain check-in\n" +
-        "• 0.1 CELO daily reward (inside Farcaster mini app)\n\n" +
-        "Open it on Farcaster: https://celo-lite.vercel.app";
-
+        "I’m keeping my onchain activity alive with daily check-ins on Celo Lite 🚀\n\nOpen the Celo Lite mini app and try it yourself:";
       await sdk.actions.composeCast({
         text,
         embeds: ["https://celo-lite.vercel.app"],
@@ -647,7 +660,7 @@ export default function Home() {
                         {ciBusy ? "Checking-in…" : "Daily check-in"}
                       </button>
 
-                      {isMiniApp && REWARD_DISTRIBUTOR_ADDR ? (
+                      {REWARD_DISTRIBUTOR_ADDR && isMiniApp ? (
                         <button
                           className={BTN}
                           onClick={() => claimReward()}
@@ -660,7 +673,7 @@ export default function Home() {
                         >
                           {rewardBusy
                             ? "Claiming…"
-                            : "Daily Reward: 0.1 CELO"}
+                            : "Daily reward: 0.1 $CELO"}
                         </button>
                       ) : null}
 
@@ -690,7 +703,7 @@ export default function Home() {
                     </div>
 
                     {/* NEW: Share on Farcaster (Mini App only) */}
-                    {isMiniApp ? (
+                    {isMiniApp && (
                       <div
                         style={{
                           marginTop: 10,
@@ -702,7 +715,7 @@ export default function Home() {
                           Share on Farcaster
                         </button>
                       </div>
-                    ) : null}
+                    )}
                   </>
                 ) : null}
               </>
