@@ -118,12 +118,18 @@ export default function Home() {
   // NEW: état pour le bouton Reward (évite double click)
   const [rewardBusy, setRewardBusy] = useState(false);
 
+  // NEW: savoir si on est dans la Mini App Farcaster
+  const [isMiniApp, setIsMiniApp] = useState(false);
+
   // ready() Mini App
   useEffect(() => {
     (async () => {
       try {
         await sdk.actions.ready();
-      } catch {}
+        setIsMiniApp(true);
+      } catch {
+        setIsMiniApp(false);
+      }
     })();
   }, []);
 
@@ -436,8 +442,8 @@ export default function Home() {
       const text =
         "Keeping my Celo activity alive with the Celo Lite mini app 🟡\n\n" +
         "• Daily onchain check-in\n" +
-        "• $CELO daily reward (inside Farcaster mini app)\n\n" +
-        "Open it on Farcaster: https://farcaster.xyz/miniapps/ma3mvR7DIRs3/celo-lite";
+        "• 0.1 CELO daily reward (inside Farcaster mini app)\n\n" +
+        "Open it on Farcaster: https://celo-lite.vercel.app";
 
       await sdk.actions.composeCast({
         text,
@@ -526,6 +532,7 @@ export default function Home() {
                 src="/icon.png"
                 alt="Celo Lite"
                 width="36"
+                height="36"
               />
               <div className="brand-text">
                 <h1>Celo Lite</h1>
@@ -640,7 +647,7 @@ export default function Home() {
                         {ciBusy ? "Checking-in…" : "Daily check-in"}
                       </button>
 
-                      {REWARD_DISTRIBUTOR_ADDR ? (
+                      {isMiniApp && REWARD_DISTRIBUTOR_ADDR ? (
                         <button
                           className={BTN}
                           onClick={() => claimReward()}
@@ -682,18 +689,20 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* NEW: Share on Farcaster */}
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <button className={BTN} onClick={handleShare}>
-                        Share on Farcaster
-                      </button>
-                    </div>
+                    {/* NEW: Share on Farcaster (Mini App only) */}
+                    {isMiniApp ? (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <button className={BTN} onClick={handleShare}>
+                          Share on Farcaster
+                        </button>
+                      </div>
+                    ) : null}
                   </>
                 ) : null}
               </>
