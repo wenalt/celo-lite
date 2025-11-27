@@ -1,116 +1,113 @@
 // pages/api/checkin-reward.js
-import { ethers } from "ethers";
+import { Wallet, ethers } from "ethers";
+import { Errors, createClient } from "@farcaster/quick-auth";
 
-const CELO_CHAIN_ID = 42220;
+const CONTRACT_ADDRESS = "0x840AD8Ea35a8d155fa58f0122D03b1f92c788d0e";
+const CHAIN_ID = 42220;
 
-// même adresse que côté front
-const REWARD_DISTRIBUTOR_ADDR =
-  process.env.NEXT_PUBLIC_REWARD_DISTRIBUTOR_ADDRESS ||
-  "0x840AD8Ea35a8d155fa58f0122D03b1f92c788d0e";
+// Domaine de la mini app (doit matcher ton déploiement prod)
+const MINIAPP_DOMAIN =
+  process.env.NEXT_PUBLIC_MINIAPP_DOMAIN || "celo-lite.vercel.app";
 
-// PK du signer (garde la même variable d'env que tu utilises déjà)
-const SIGNER_PK =
-  process.env.REWARD_SIGNER_PK || process.env.REWARD_SIGNER_PRIVATE_KEY;
-
-if (!SIGNER_PK) {
-  console.warn(
-    "[checkin-reward] Missing SIGNER_PK env (REWARD_SIGNER_PK or REWARD_SIGNER_PRIVATE_KEY)"
-  );
-}
-
-// 0.1 CELO en wei
-const REWARD_AMOUNT_WEI = "100000000000000000";
-
-// domain + types pour EIP-712 (doit matcher le contrat RewardDistributor)
-const DOMAIN = {
-  name: "CeloLiteRewardDistributor",
-  version: "1",
-  chainId: CELO_CHAIN_ID,
-  verifyingContract: REWARD_DISTRIBUTOR_ADDR,
-};
-
-const TYPES = {
-  Claim: [
-    { name: "account", type: "address" },
-    { name: "amount", type: "uint256" },
-    { name: "nonce", type: "uint256" },
-  ],
-};
-
-// signer hors handler (réutilisé entre requêtes)
-const signer = SIGNER_PK ? new ethers.Wallet(SIGNER_PK) : null;
-
-// index de jour depuis l’epoch (changé toutes les 24h approx)
-function getDayIndex() {
-  return Math.floor(Date.now() / 86400000);
-}
-
-// nonce = fid * 1_000_000 + dayIndex  => 1 reward / jour / FID
-function makeNonce(fid) {
-  const dayIndex = BigInt(getDayIndex());
-  return {
-    nonceBig: BigInt(fid) * 1_000_000n + dayIndex,
-    dayIndex: Number(dayIndex),
-  };
-}
+const quickAuthClient = createClient();
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  if (!signer) {
-    return res.status(500).json({ error: "Signer not configured" });
+  const pk = process.env.CELO_LITE_SIGNER_PK;
+  if (!pk) {
+    return res
+      .status(500)
+      .json({ error: "Missing CELO_LITE_SIGNER_PK env var" });
   }
 
   try {
-    const { address } = req.body || {};
-    if (!address || !ethers.isAddress(address)) {
-      return res.status(400).json({ error: "Invalid address" });
+    // 1) Vérifier le token Quick Auth (Mini App only)
+    const authHeader =
+      req.headers.authorization || req.headers.Authorization || null;
+
+    if (
+      !authHeader ||
+      typeof authHeader !== "string" ||
+      !authHeader.startsWith("Bearer ")
+    ) {
+      return res.status(401).json({ error: "Missing QuickAuth token" });
     }
 
-    // Récupérer l'utilisateur Farcaster vérifié par QuickAuth
-    const rawUser = req.headers["x-farcaster-user"];
-    let fid = null;
+    const token = authHeader.slice("Bearer ".length).trim();
 
-    if (typeof rawUser === "string") {
-      try {
-        const parsed = JSON.parse(rawUser);
-        fid = parsed?.fid;
-      } catch (e) {
-        console.warn("Failed to parse x-farcaster-user header", e);
-      }
-    }
-
-    if (!fid) {
-      // Empêche les calls directs hors Mini App / QuickAuth
-      return res.status(401).json({
-        error: "Missing Farcaster identity (use Celo Lite from Farcaster Mini App)",
+    let payload;
+    try {
+      payload = await quickAuthClient.verifyJwt({
+        token,
+        domain: MINIAPP_DOMAIN,
       });
+    } catch (e) {
+      if (e instanceof Errors.InvalidTokenError) {
+        console.info("Invalid QuickAuth token:", e.message);
+        return res.status(401).json({ error: "Invalid QuickAuth token" });
+      }
+      throw e;
     }
 
-    // Construire un nonce unique par jour / FID
-    const { nonceBig, dayIndex } = makeNonce(fid);
+    // FID authentifié (1 FID = identité unique)
+    const fidRaw = payload.sub;
+    const fidStr = String(fidRaw || "").trim();
+    if (!fidStr || !/^\d+$/.test(fidStr)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid Farcaster FID in QuickAuth payload" });
+    }
+    const fidBig = BigInt(fidStr);
 
-    const message = {
-      account: address,
-      amount: BigInt(REWARD_AMOUNT_WEI),
-      nonce: nonceBig,
-    };
+    const { address } = req.body || {};
+    if (!address || typeof address !== "string") {
+      return res.status(400).json({ error: "Missing or invalid address" });
+    }
 
-    // Signature EIP-712 (ethers v6)
-    const signature = await signer.signTypedData(DOMAIN, TYPES, message);
+    if (!address.startsWith("0x") || address.length !== 42) {
+      return res.status(400).json({ error: "Invalid address format" });
+    }
+
+    // TODO plus tard: vérifier que `address` correspond bien au primary address du FID si tu veux
+
+    // Montant fixe : 0.1 CELO par check-in
+    const amount = ethers.parseEther("0.1");
+
+    // --- NOUVEAU SCHÉMA DE NONCE ---
+    // todayStr reste lisible (ex: "20251118")
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const todayBig = BigInt(todayStr); // 20251118n
+    // nonce = fid * 1_000_000 + YYYYMMDD => 1 reward par FID et par jour
+    const nonce = fidBig * 1_000_000n + todayBig;
+    // -------------------------------
+
+    // Doit matcher exactement le Solidity:
+    // keccak256(abi.encodePacked(msg.sender, amount, nonce, chainid, address(this)))
+    const messageHash = ethers.solidityPackedKeccak256(
+      ["address", "uint256", "uint256", "uint256", "address"],
+      [address, amount, nonce, BigInt(CHAIN_ID), CONTRACT_ADDRESS]
+    );
+
+    const wallet = new Wallet(pk);
+    const signature = await wallet.signMessage(ethers.getBytes(messageHash));
 
     return res.status(200).json({
-      amount: REWARD_AMOUNT_WEI,
-      nonce: nonceBig.toString(),
+      address,
+      amount: amount.toString(),
+      nonce: nonce.toString(),
+      messageHash,
       signature,
-      fid,
-      dayIndex,
+      fid: fidStr,      // utile pour logs front
+      today: todayStr,  // info bonus (jour utilisé)
     });
-  } catch (err) {
-    console.error("[checkin-reward] Internal error", err);
-    return res.status(500).json({ error: "Internal error" });
+  } catch (e) {
+    console.error("checkin-reward error:", e);
+    return res.status(500).json({
+      error: e?.message || "Unknown error in /api/checkin-reward",
+    });
   }
 }
