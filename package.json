@@ -10,26 +10,22 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "15.4.8",
+    "next": "15.4.10",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-
     "@walletconnect/ethereum-provider": "2.21.5",
     "@walletconnect/modal": "2.7.0",
-
     "@reown/appkit": "latest",
     "@reown/appkit-adapter-wagmi": "latest",
     "wagmi": "latest",
     "viem": "latest",
     "@tanstack/react-query": "latest",
-
     "@farcaster/miniapp-sdk": "latest",
     "@farcaster/miniapp-wagmi-connector": "latest",
     "@farcaster/quick-auth": "0.0.8",
     "@selfxyz/core": "*",
     "@selfxyz/qrcode": "*",
     "ethers": "*",
-
     "@vercel/analytics": "^1.2.2"
   }
 }
