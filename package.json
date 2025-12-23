@@ -27,8 +27,9 @@
     "@farcaster/miniapp-wagmi-connector": "latest",
     "@farcaster/quick-auth": "0.0.8",
 
-    "@selfxyz/core": "0.5.2",
-    "@selfxyz/qrcode": "0.5.2",
+    "@selfxyz/core": "*",
+    "@selfxyz/qrcode": "*",
+
 
     "@vercel/analytics": "1.2.2"
   }
