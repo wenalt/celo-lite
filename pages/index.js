@@ -919,67 +919,11 @@ export default function Home() {
   <div className="btns">
     <a
       className={BTN}
-      href="https://www.celopg.eco/programs/proof-of-ship-s1"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Proof Of Ship
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/proof-of-impact-s1"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Proof Of Impact
-    </a>
-    <a
-      className={BTN}
       href="https://www.celopg.eco/programs/supportstreams1"
       target="_blank"
       rel="noreferrer"
     >
       Support Streams
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/prezenti-peach-round"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Prezenti Peach Round
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/mini-app-mondays"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Mini Apps Monday
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/celo-builder-fund"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Celo Builder Fund
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/celeu-cirkvit-program-season-1---defi-renaissance"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Cel&apos;EU Cirkvit Program S1 - DeFi Renaissance
-    </a>
-    <a
-      className={BTN}
-      href="https://www.celopg.eco/programs/gitcoin-grants-24"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Gitcoin Grants_24{" "}
     </a>
   </div>
 </section>
