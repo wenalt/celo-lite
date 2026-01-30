@@ -3,17 +3,24 @@ const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    urlImports: ["https://cdn.jsdelivr.net"]
-  },
+  reactStrictMode: true,
+
   webpack: (config) => {
-    // Map ONLY the bare import "react-spinners" to our shim
     config.resolve.alias = {
-      ...config.resolve.alias,
-      "react-spinners$": path.resolve(__dirname, "lib/react-spinners-shim.js"),
+      ...(config.resolve.alias || {}),
+
+      // Map ONLY the bare import "react-spinners" to our shim
+      "react-spinners$": path.resolve(
+        __dirname,
+        "lib/react-spinners-shim.js"
+      ),
     };
+
     return config;
   },
+
+  // Required for Next.js 16 to avoid Turbopack warnings
+  turbopack: {},
 };
 
 module.exports = nextConfig;
