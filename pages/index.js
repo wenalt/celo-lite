@@ -26,8 +26,9 @@ const CARD = "card";
 const CELO_CHAIN_ID = 42220;
 const CELO_L2_START_LABEL = "25 Mar 2025";
 
-// NEW: Saison 1 (Prosperity Passport)
+// NEW: S1 (Prosperity Passport)
 const S1_START_LABEL = "23 Aug 2025";
+const S1_END_LABEL = "24 Dec 2025";
 
 // RPC Celo pour les lectures readonly (identique web + mini-app)
 const CELO_RPC =
@@ -665,9 +666,9 @@ export default function Home() {
                 </p>
                 {txError ? <p className="warn">{txError}</p> : null}
                 <p className="hint">
-                  L2 counted since {CELO_L2_START_LABEL}. S1 since{" "}
-                  {S1_START_LABEL}.
-                </p>
+                L2 counted since {CELO_L2_START_LABEL}. S1 ran from{" "}
+                {S1_START_LABEL} to {S1_END_LABEL}. Season 2 has not started yet.
+                 </p>
 
                 {/* Daily check-in + Reward */}
                 {CHECKIN_ADDR ? (
