@@ -526,6 +526,12 @@ export default function Home() {
         <meta property="og:image" content="/og.png" />
         <link rel="icon" href="/icon.png" />
 
+  {/* ✅ Talent Protocol verification */}
+        <meta
+    name="talentapp:project_verification"
+    content="310e4396ba6411a5316f6d5372d024c4060114a65274441a13826cab877a881be227ec3c6961bc76600dd007cf1c5d8c32abc54baa100a97aef80097ad2b5373"
+  />
+
         {/* Mini App + Frame embeds */}
         <meta
           name="fc:miniapp"
